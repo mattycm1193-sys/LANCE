@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Briefcase, 
@@ -10,16 +10,54 @@ import {
   Sparkles,
   Search,
   ArrowRight,
-  Download
+  Download,
+  MessageSquare,
+  Mic,
+  LogIn,
+  LogOut,
+  BrainCircuit,
+  Video,
+  Image as ImageIcon,
+  Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useDropzone } from 'react-dropzone';
 import { cn } from './lib/utils';
-import { generateContent, generateImage, findOpportunities } from './services/gemini';
-import { Section, CaseStudy, ProfileData, BrandingAsset } from './types';
+import { 
+  generateContent, 
+  generateContentWithThinking, 
+  generateHighQualityImage, 
+  editImage, 
+  animateImageToVideo, 
+  findOpportunities 
+} from './services/gemini';
+import { 
+  auth, 
+  db, 
+  googleProvider, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged, 
+  collection, 
+  doc, 
+  setDoc, 
+  onSnapshot, 
+  query, 
+  where, 
+  orderBy,
+  getDocFromServer,
+  handleFirestoreError,
+  OperationType
+} from './firebase';
+import { Section, CaseStudy, ProfileData, BrandingAsset, User } from './types';
 import Markdown from 'react-markdown';
+import { Chatbot } from './components/Chatbot';
+import { VoiceAgent } from './components/VoiceAgent';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   
   // State for different features
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
@@ -27,13 +65,119 @@ export default function App() {
   const [brandingAssets, setBrandingAssets] = useState<BrandingAsset[]>([]);
   const [opportunities, setOpportunities] = useState<string>('');
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      setIsAuthReady(true);
+      
+      if (u) {
+        // Sync user to Firestore
+        const userRef = doc(db, 'users', u.uid);
+        try {
+          const userDoc = await getDocFromServer(userRef);
+          if (!userDoc.exists()) {
+            await setDoc(userRef, {
+              uid: u.uid,
+              email: u.email,
+              displayName: u.displayName,
+              photoURL: u.photoURL,
+              role: 'user',
+              createdAt: Date.now()
+            });
+          }
+        } catch (e) {
+          console.error("Error syncing user:", e);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Firestore Sync
+  useEffect(() => {
+    if (!user) {
+      setCaseStudies([]);
+      setProfileData(null);
+      setBrandingAssets([]);
+      return;
+    }
+
+    const qCaseStudies = query(collection(db, 'caseStudies'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const unsubCaseStudies = onSnapshot(qCaseStudies, (snapshot) => {
+      setCaseStudies(snapshot.docs.map(doc => doc.data() as CaseStudy));
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'caseStudies'));
+
+    const qProfiles = query(collection(db, 'profiles'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const unsubProfiles = onSnapshot(qProfiles, (snapshot) => {
+      if (!snapshot.empty) setProfileData(snapshot.docs[0].data() as ProfileData);
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'profiles'));
+
+    const qAssets = query(collection(db, 'brandingAssets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const unsubAssets = onSnapshot(qAssets, (snapshot) => {
+      setBrandingAssets(snapshot.docs.map(doc => doc.data() as BrandingAsset));
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'brandingAssets'));
+
+    return () => {
+      unsubCaseStudies();
+      unsubProfiles();
+      unsubAssets();
+    };
+  }, [user]);
+
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'portfolio', label: 'Portfolio Builder', icon: Briefcase },
     { id: 'profile', label: 'Profile Curation', icon: UserCircle },
     { id: 'branding', label: 'Branding Studio', icon: Palette },
     { id: 'opportunities', label: 'Opportunity Finder', icon: TrendingUp },
+    { id: 'chat', label: 'AI Coach', icon: MessageSquare },
+    { id: 'voice', label: 'Voice Agent', icon: Mic },
   ];
+
+  if (!isAuthReady) {
+    return (
+      <div className="h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-indigo-600/20">
+          <Sparkles className="w-10 h-10 text-white" />
+        </div>
+        <h1 className="text-4xl font-bold mb-4 tracking-tight">Freelance Success Agent</h1>
+        <p className="text-gray-400 max-w-md mb-8 leading-relaxed">
+          Scale your freelancing career with AI-powered portfolios, profile curation, and real-time market insights.
+        </p>
+        <button
+          onClick={handleLogin}
+          className="bg-white text-black px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:scale-105 transition-transform shadow-xl"
+        >
+          <LogIn className="w-5 h-5" />
+          Sign in with Google
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-white font-sans selection:bg-indigo-500/30">
@@ -66,7 +210,7 @@ export default function App() {
           </nav>
         </div>
         
-        <div className="mt-auto p-6 border-t border-white/10">
+        <div className="mt-auto p-6 border-t border-white/10 space-y-4">
           <div className="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 p-4 rounded-2xl border border-indigo-500/20">
             <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1">Pro Status</p>
             <p className="text-sm text-gray-300 mb-3">Your profile is 85% optimized for conversion.</p>
@@ -74,6 +218,14 @@ export default function App() {
               <div className="bg-indigo-500 h-full w-[85%]" />
             </div>
           </div>
+          
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-all group"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Sign Out</span>
+          </button>
         </div>
       </aside>
 
@@ -85,7 +237,12 @@ export default function App() {
             <button className="p-2 text-gray-400 hover:text-white transition-colors">
               <Search className="w-5 h-5" />
             </button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 border border-white/20" />
+            <img 
+              src={user.photoURL || ''} 
+              alt={user.displayName || ''} 
+              className="w-8 h-8 rounded-full border border-white/20"
+              referrerPolicy="no-referrer"
+            />
           </div>
         </header>
 
@@ -99,10 +256,12 @@ export default function App() {
               transition={{ duration: 0.2 }}
             >
               {activeSection === 'dashboard' && <DashboardView setActiveSection={setActiveSection} />}
-              {activeSection === 'portfolio' && <PortfolioView caseStudies={caseStudies} setCaseStudies={setCaseStudies} />}
-              {activeSection === 'profile' && <ProfileView profileData={profileData} setProfileData={setProfileData} />}
-              {activeSection === 'branding' && <BrandingView assets={brandingAssets} setAssets={setBrandingAssets} />}
+              {activeSection === 'portfolio' && <PortfolioView user={user} caseStudies={caseStudies} />}
+              {activeSection === 'profile' && <ProfileView user={user} profileData={profileData} />}
+              {activeSection === 'branding' && <BrandingView user={user} assets={brandingAssets} />}
               {activeSection === 'opportunities' && <OpportunitiesView opportunities={opportunities} setOpportunities={setOpportunities} />}
+              {activeSection === 'chat' && <Chatbot />}
+              {activeSection === 'voice' && <VoiceAgent />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -185,9 +344,10 @@ function DashboardView({ setActiveSection }: { setActiveSection: (s: Section) =>
   );
 }
 
-function PortfolioView({ caseStudies, setCaseStudies }: { caseStudies: CaseStudy[], setCaseStudies: (c: CaseStudy[]) => void }) {
+function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStudy[] }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [input, setInput] = useState('');
+  const [useHighThinking, setUseHighThinking] = useState(false);
 
   const handleGenerate = async () => {
     if (!input) return;
@@ -197,11 +357,21 @@ function PortfolioView({ caseStudies, setCaseStudies }: { caseStudies: CaseStudy
       Format as JSON with fields: title, client, challenge, solution, results, tags (array).
       Make it professional, data-driven, and persuasive.`;
       
-      const result = await generateContent(prompt, "You are a world-class conversion copywriter for freelancers.");
+      const result = useHighThinking 
+        ? await generateContentWithThinking(prompt, "You are a world-class conversion copywriter for freelancers.")
+        : await generateContent(prompt, "You are a world-class conversion copywriter for freelancers.");
+      
       const cleaned = result.replace(/```json|```/g, '').trim();
       const data = JSON.parse(cleaned);
       
-      setCaseStudies([{ ...data, id: Date.now().toString() }, ...caseStudies]);
+      const studyId = doc(collection(db, 'caseStudies')).id;
+      await setDoc(doc(db, 'caseStudies', studyId), {
+        ...data,
+        id: studyId,
+        userId: user.uid,
+        createdAt: Date.now()
+      });
+      
       setInput('');
     } catch (e) {
       console.error(e);
@@ -213,7 +383,19 @@ function PortfolioView({ caseStudies, setCaseStudies }: { caseStudies: CaseStudy
   return (
     <div className="space-y-8">
       <div className="bg-[#141414] p-6 rounded-2xl border border-white/5">
-        <h3 className="text-lg font-bold mb-4">New Case Study</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold">New Case Study</h3>
+          <button 
+            onClick={() => setUseHighThinking(!useHighThinking)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
+              useHighThinking ? "bg-indigo-500/20 border-indigo-500 text-indigo-400" : "bg-white/5 border-white/10 text-gray-500"
+            )}
+          >
+            <BrainCircuit className="w-4 h-4" />
+            High Thinking Mode
+          </button>
+        </div>
         <div className="space-y-4">
           <textarea
             value={input}
@@ -268,7 +450,7 @@ function PortfolioView({ caseStudies, setCaseStudies }: { caseStudies: CaseStudy
   );
 }
 
-function ProfileView({ profileData, setProfileData }: { profileData: ProfileData | null, setProfileData: (p: ProfileData) => void }) {
+function ProfileView({ user, profileData }: { user: User, profileData: ProfileData | null }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [platform, setPlatform] = useState('Upwork');
   const [skills, setSkills] = useState('');
@@ -283,7 +465,15 @@ function ProfileView({ profileData, setProfileData }: { profileData: ProfileData
       
       const result = await generateContent(prompt, "You are a professional freelance profile consultant.");
       const cleaned = result.replace(/```json|```/g, '').trim();
-      setProfileData(JSON.parse(cleaned));
+      const data = JSON.parse(cleaned);
+      
+      const profileId = doc(collection(db, 'profiles')).id;
+      await setDoc(doc(db, 'profiles', profileId), {
+        ...data,
+        id: profileId,
+        userId: user.uid,
+        createdAt: Date.now()
+      });
     } catch (e) {
       console.error(e);
     } finally {
@@ -368,19 +558,88 @@ function ProfileView({ profileData, setProfileData }: { profileData: ProfileData
   );
 }
 
-function BrandingView({ assets, setAssets }: { assets: BrandingAsset[], setAssets: (a: BrandingAsset[]) => void }) {
+function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [type, setType] = useState<'banner' | 'profile-pic'>('banner');
+  const [type, setType] = useState<'banner' | 'profile-pic' | 'video'>('banner');
+  const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  const onDrop = (acceptedFiles: File[]) => {
+    setUploadedFile(acceptedFiles[0]);
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+    onDrop, 
+    accept: { 'image/*': [] },
+    multiple: false 
+  });
+
+  const [editingAsset, setEditingAsset] = useState<BrandingAsset | null>(null);
+  const [editPrompt, setEditPrompt] = useState('');
 
   const handleGenerate = async () => {
-    if (!prompt) return;
+    if (!prompt && !uploadedFile) return;
     setIsGenerating(true);
     try {
-      const fullPrompt = `${type === 'banner' ? 'A professional, high-end freelance profile banner for' : 'A stylized, professional profile picture for'} a freelancer who specializes in ${prompt}. Modern, clean, professional aesthetic, high resolution.`;
-      const url = await generateImage(fullPrompt, type === 'banner' ? '16:9' : '1:1');
-      setAssets([{ id: Date.now().toString(), type, url, prompt }, ...assets]);
+      let url = '';
+      if (type === 'video') {
+        if (!uploadedFile) throw new Error("Please upload a photo first");
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(uploadedFile);
+        });
+        url = await animateImageToVideo(base64, uploadedFile.type, prompt || "Animate this photo professionally");
+      } else {
+        url = await generateHighQualityImage(prompt, imageSize, type === 'banner' ? '16:9' : '1:1');
+      }
+
+      const assetId = doc(collection(db, 'brandingAssets')).id;
+      await setDoc(doc(db, 'brandingAssets', assetId), {
+        id: assetId,
+        userId: user.uid,
+        type,
+        url,
+        prompt: prompt || "Generated from photo",
+        createdAt: Date.now()
+      });
       setPrompt('');
+      setUploadedFile(null);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleEdit = async () => {
+    if (!editingAsset || !editPrompt) return;
+    setIsGenerating(true);
+    try {
+      // Fetch the image as base64
+      const response = await fetch(editingAsset.url);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+
+      const url = await editImage(editPrompt, base64, blob.type);
+      
+      const assetId = doc(collection(db, 'brandingAssets')).id;
+      await setDoc(doc(db, 'brandingAssets', assetId), {
+        id: assetId,
+        userId: user.uid,
+        type: editingAsset.type,
+        url,
+        prompt: `Edit of ${editingAsset.prompt}: ${editPrompt}`,
+        createdAt: Date.now()
+      });
+      
+      setEditingAsset(null);
+      setEditPrompt('');
     } catch (e) {
       console.error(e);
     } finally {
@@ -390,37 +649,129 @@ function BrandingView({ assets, setAssets }: { assets: BrandingAsset[], setAsset
 
   return (
     <div className="space-y-8">
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {editingAsset && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#141414] border border-white/10 p-8 rounded-3xl max-w-lg w-full space-y-6"
+            >
+              <h3 className="text-xl font-bold">Edit Image</h3>
+              <div className="aspect-video rounded-xl overflow-hidden border border-white/5">
+                <img src={editingAsset.url} alt="To edit" className="w-full h-full object-cover" />
+              </div>
+              <div className="space-y-4">
+                <input 
+                  type="text"
+                  value={editPrompt}
+                  onChange={(e) => setEditPrompt(e.target.value)}
+                  placeholder="What would you like to change? (e.g. 'Add a sunset background')"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setEditingAsset(null)}
+                    className="flex-1 py-3 rounded-xl font-bold text-gray-400 hover:bg-white/5 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleEdit}
+                    disabled={isGenerating || !editPrompt}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                  >
+                    {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                    Apply Edit
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="bg-[#141414] p-6 rounded-2xl border border-white/5">
         <h3 className="text-lg font-bold mb-4">Branding Studio</h3>
-        <div className="flex gap-4 mb-4">
-          <button 
-            onClick={() => setType('banner')}
-            className={cn("flex-1 py-3 rounded-xl font-bold text-sm transition-all", type === 'banner' ? "bg-indigo-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10")}
-          >
-            Profile Banner
-          </button>
-          <button 
-            onClick={() => setType('profile-pic')}
-            className={cn("flex-1 py-3 rounded-xl font-bold text-sm transition-all", type === 'profile-pic' ? "bg-indigo-600 text-white" : "bg-white/5 text-gray-400 hover:bg-white/10")}
-          >
-            Profile Picture
-          </button>
+        <div className="flex flex-wrap gap-3 mb-6">
+          {[
+            { id: 'banner', label: 'Banner', icon: ImageIcon },
+            { id: 'profile-pic', label: 'Profile Pic', icon: UserCircle },
+            { id: 'video', label: 'Video (Veo)', icon: Video },
+          ].map((t) => (
+            <button 
+              key={t.id}
+              onClick={() => setType(t.id as any)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all border",
+                type === t.id ? "bg-indigo-600 border-indigo-400 text-white" : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+              )}
+            >
+              <t.icon className="w-4 h-4" />
+              {t.label}
+            </button>
+          ))}
         </div>
+
+        {type !== 'video' && (
+          <div className="mb-6">
+            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Resolution</label>
+            <div className="flex gap-2">
+              {['1K', '2K', '4K'].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setImageSize(size as any)}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
+                    imageSize === size ? "bg-indigo-500/20 border-indigo-500 text-indigo-400" : "bg-white/5 border-white/10 text-gray-500"
+                  )}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {type === 'video' && (
+          <div {...getRootProps()} className={cn(
+            "mb-6 border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer",
+            isDragActive ? "border-indigo-500 bg-indigo-500/5" : "border-white/10 hover:border-white/20 bg-black/20"
+          )}>
+            <input {...getInputProps()} />
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                <Upload className="w-6 h-6 text-gray-400" />
+              </div>
+              {uploadedFile ? (
+                <p className="text-sm text-indigo-400 font-medium">{uploadedFile.name}</p>
+              ) : (
+                <>
+                  <p className="text-sm font-medium">Drop a photo here or click to upload</p>
+                  <p className="text-xs text-gray-500 text-balance">Veo will animate this photo into a professional video</p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4">
           <input 
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe your style (e.g. 'Minimalist Tech', 'Vibrant Creative', 'Corporate Professional')"
+            placeholder={type === 'video' ? "Describe the animation (optional)" : "Describe your style (e.g. 'Minimalist Tech', 'Vibrant Creative')"}
             className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <button
             onClick={handleGenerate}
-            disabled={isGenerating || !prompt}
+            disabled={isGenerating || (!prompt && !uploadedFile)}
             className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
           >
             {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Palette className="w-5 h-5" />}
-            Generate Asset
+            {type === 'video' ? 'Generate Video' : 'Generate Asset'}
           </button>
         </div>
       </div>
@@ -429,13 +780,24 @@ function BrandingView({ assets, setAssets }: { assets: BrandingAsset[], setAsset
         {assets.map((asset) => (
           <div key={asset.id} className="bg-[#141414] rounded-3xl overflow-hidden border border-white/5 group">
             <div className={cn("relative overflow-hidden", asset.type === 'banner' ? "aspect-video" : "aspect-square")}>
-              <img 
-                src={asset.url} 
-                alt={asset.prompt} 
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                referrerPolicy="no-referrer"
-              />
+              {asset.type === 'video' ? (
+                <video src={asset.url} controls className="w-full h-full object-cover" />
+              ) : (
+                <img 
+                  src={asset.url} 
+                  alt={asset.prompt} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  referrerPolicy="no-referrer"
+                />
+              )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                <button 
+                  onClick={() => setEditingAsset(asset)}
+                  className="p-3 bg-white text-black rounded-full hover:scale-110 transition-transform"
+                  title="Edit Image"
+                >
+                  <Palette className="w-5 h-5" />
+                </button>
                 <button className="p-3 bg-white text-black rounded-full hover:scale-110 transition-transform">
                   <Download className="w-5 h-5" />
                 </button>
@@ -455,12 +817,15 @@ function BrandingView({ assets, setAssets }: { assets: BrandingAsset[], setAsset
 function OpportunitiesView({ opportunities, setOpportunities }: { opportunities: string, setOpportunities: (o: string) => void }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [niche, setNiche] = useState('');
+  const [useHighThinking, setUseHighThinking] = useState(false);
 
   const handleSearch = async () => {
     if (!niche) return;
     setIsGenerating(true);
     try {
-      const result = await findOpportunities(niche);
+      const result = useHighThinking 
+        ? await generateContentWithThinking(`Analyze high-demand monetization opportunities for a freelancer in the ${niche} niche. Focus on high-conversion services and emerging platforms. Use search grounding.`, "You are a world-class market analyst.")
+        : await findOpportunities(niche);
       setOpportunities(result);
     } catch (e) {
       console.error(e);
@@ -472,7 +837,19 @@ function OpportunitiesView({ opportunities, setOpportunities }: { opportunities:
   return (
     <div className="space-y-8">
       <div className="bg-[#141414] p-6 rounded-2xl border border-white/5">
-        <h3 className="text-lg font-bold mb-4">Opportunity Finder</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold">Opportunity Finder</h3>
+          <button 
+            onClick={() => setUseHighThinking(!useHighThinking)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
+              useHighThinking ? "bg-indigo-500/20 border-indigo-500 text-indigo-400" : "bg-white/5 border-white/10 text-gray-500"
+            )}
+          >
+            <BrainCircuit className="w-4 h-4" />
+            High Thinking Mode
+          </button>
+        </div>
         <div className="flex gap-4">
           <input 
             type="text"
