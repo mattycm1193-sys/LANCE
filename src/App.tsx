@@ -53,6 +53,7 @@ import { Section, CaseStudy, ProfileData, BrandingAsset, User } from './types';
 import Markdown from 'react-markdown';
 import { Chatbot } from './components/Chatbot';
 import { VoiceAgent } from './components/VoiceAgent';
+import { SectionErrorBoundary } from './components/SectionErrorBoundary';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -258,10 +259,10 @@ export default function App() {
               {activeSection === 'dashboard' && <DashboardView setActiveSection={setActiveSection} />}
               {activeSection === 'portfolio' && <PortfolioView user={user} caseStudies={caseStudies} />}
               {activeSection === 'profile' && <ProfileView user={user} profileData={profileData} />}
-              {activeSection === 'branding' && <BrandingView user={user} assets={brandingAssets} />}
-              {activeSection === 'opportunities' && <OpportunitiesView opportunities={opportunities} setOpportunities={setOpportunities} />}
-              {activeSection === 'chat' && <Chatbot />}
-              {activeSection === 'voice' && <VoiceAgent />}
+              {activeSection === 'branding' && <SectionErrorBoundary><BrandingView user={user} assets={brandingAssets} /></SectionErrorBoundary>}
+              {activeSection === 'opportunities' && <SectionErrorBoundary><OpportunitiesView opportunities={opportunities} setOpportunities={setOpportunities} /></SectionErrorBoundary>}
+              {activeSection === 'chat' && <SectionErrorBoundary><Chatbot /></SectionErrorBoundary>}
+              {activeSection === 'voice' && <SectionErrorBoundary><VoiceAgent /></SectionErrorBoundary>}
             </motion.div>
           </AnimatePresence>
         </div>
