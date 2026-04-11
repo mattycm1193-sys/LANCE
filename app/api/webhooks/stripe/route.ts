@@ -1,42 +1,42 @@
-import { Request, Response } from 'express';
-import * as Stripe from 'stripe';
-import { db } from '../_lib/firebaseAdmin';
+import Stripe from 'stripe';
+import { db } from '../../_lib/firebaseAdmin';
 
-const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
-  apiVersion: '2025-02-24.acacia' as any,
-});
+// Do not initialize outside, so that it uses mock correctly in tests
+let stripe: any;
+
+function getStripe() {
+  if (!stripe) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
+      apiVersion: '2025-02-24.acacia' as any,
+    });
+  }
+  return stripe;
+}
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_mock';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-export default async function handler(req: Request, res: Response) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).end('Method Not Allowed');
-  }
-
+export async function POST(req: Request) {
   let rawBody: string;
   try {
-    rawBody = await getRawBody(req);
+    rawBody = await req.text();
   } catch (err) {
     console.error('Error getting raw body', err);
-    return res.status(400).send('Error getting raw body');
+    return new Response('Error getting raw body', { status: 400 });
   }
 
-  const sig = req.headers['stripe-signature'];
+  const sig = req.headers.get('stripe-signature');
+
+  if (!sig) {
+    return new Response('Missing stripe-signature header', { status: 400 });
+  }
 
   let event: any;
 
   try {
-    event = stripe.webhooks.constructEvent(rawBody, sig as string, webhookSecret);
+    event = getStripe().webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (err: any) {
     console.error(`Webhook Error: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
   try {
@@ -95,31 +95,9 @@ export default async function handler(req: Request, res: Response) {
         console.log(`Unhandled event type ${event.type}`);
     }
 
-    res.json({ received: true });
+    return Response.json({ received: true });
   } catch (error) {
     console.error('Error handling webhook', error);
-    res.status(500).json({ error: 'Webhook handler failed' });
+    return Response.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
-}
-
-async function getRawBody(req: Request): Promise<string> {
-  if (typeof req.body === 'string') {
-    return req.body;
-  }
-  if (Buffer.isBuffer(req.body)) {
-    return req.body.toString('utf8');
-  }
-
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => {
-      data += chunk;
-    });
-    req.on('end', () => {
-      resolve(data);
-    });
-    req.on('error', err => {
-      reject(err);
-    });
-  });
 }
