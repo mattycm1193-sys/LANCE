@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Request, Response } from 'express';
 
 // Create firestore mock functions we can inspect
 const mockSet = vi.fn();
@@ -6,7 +7,7 @@ const mockUpdate = vi.fn();
 const mockCommit = vi.fn();
 const mockWhere = vi.fn();
 
-vi.mock('../../_lib/firebaseAdmin', () => {
+vi.mock('../_lib/firebaseAdmin', () => {
   return {
     db: {
       collection: vi.fn(() => ({
@@ -26,46 +27,49 @@ vi.mock('../../_lib/firebaseAdmin', () => {
 const mockConstructEvent = vi.fn();
 
 vi.mock('stripe', () => {
-  class StripeMock {
-    webhooks = {
-      constructEvent: mockConstructEvent,
-    };
-  }
-  return {
-    default: StripeMock,
+  const Stripe = vi.fn();
+  Stripe.prototype.webhooks = {
+    constructEvent: (...args: any[]) => mockConstructEvent(...args),
   };
+  return { default: Stripe };
 });
 
-import { POST } from './route';
-import { db } from '../../_lib/firebaseAdmin';
+import handler from './stripe';
+import { db } from '../_lib/firebaseAdmin';
 
-describe('Stripe Webhook Route Handler', () => {
-  let req: Request;
+describe('Stripe Webhook Handler', () => {
+  let req: Partial<Request>;
+  let res: Partial<Response>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    req = {
+      method: 'POST',
+      headers: {
+        'stripe-signature': 'mock-sig',
+      },
+      body: 'mock-raw-body',
+    };
+
+    res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+      send: vi.fn(),
+      end: vi.fn(),
+      setHeader: vi.fn(),
+    };
   });
 
-  function createMockRequest(body: string, sig: string | null): Request {
-    const headers = new Headers();
-    if (sig) headers.set('stripe-signature', sig);
-    return new Request('https://example.com/api/webhooks/stripe', {
-      method: 'POST',
-      headers,
-      body,
-    });
-  }
-
-  it('should return 400 if stripe-signature is missing', async () => {
-    req = createMockRequest('mock-raw-body', null);
-    const res = await POST(req);
-    expect(res.status).toBe(400);
-    expect(await res.text()).toBe('Missing stripe-signature header');
+  it('should return 405 if method is not POST', async () => {
+    req.method = 'GET';
+    await handler(req as Request, res as Response);
+    expect(res.status).toHaveBeenCalledWith(405);
+    expect(res.setHeader).toHaveBeenCalledWith('Allow', 'POST');
+    expect(res.end).toHaveBeenCalledWith('Method Not Allowed');
   });
 
   it('should handle checkout.session.completed', async () => {
-    req = createMockRequest('mock-raw-body', 'mock-sig');
-
     const mockEvent = {
       type: 'checkout.session.completed',
       data: {
@@ -78,7 +82,7 @@ describe('Stripe Webhook Route Handler', () => {
 
     mockConstructEvent.mockReturnValueOnce(mockEvent);
 
-    const res = await POST(req);
+    await handler(req as Request, res as Response);
 
     expect(db.collection).toHaveBeenCalledWith('users');
     expect(mockSet).toHaveBeenCalledWith(
@@ -89,14 +93,10 @@ describe('Stripe Webhook Route Handler', () => {
       },
       { merge: true }
     );
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json).toEqual({ received: true });
+    expect(res.json).toHaveBeenCalledWith({ received: true });
   });
 
   it('should handle customer.subscription.updated', async () => {
-    req = createMockRequest('mock-raw-body', 'mock-sig');
-
     const mockEvent = {
       type: 'customer.subscription.updated',
       data: {
@@ -117,7 +117,7 @@ describe('Stripe Webhook Route Handler', () => {
       }),
     });
 
-    const res = await POST(req);
+    await handler(req as Request, res as Response);
 
     expect(db.collection).toHaveBeenCalledWith('users');
     expect(mockWhere).toHaveBeenCalledWith('stripeCustomerId', '==', 'cus_456');
@@ -125,14 +125,10 @@ describe('Stripe Webhook Route Handler', () => {
       subscriptionStatus: 'canceled',
     });
     expect(mockCommit).toHaveBeenCalled();
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json).toEqual({ received: true });
+    expect(res.json).toHaveBeenCalledWith({ received: true });
   });
 
   it('should handle invoice.payment_failed', async () => {
-    req = createMockRequest('mock-raw-body', 'mock-sig');
-
     const mockEvent = {
       type: 'invoice.payment_failed',
       data: {
@@ -152,7 +148,7 @@ describe('Stripe Webhook Route Handler', () => {
       }),
     });
 
-    const res = await POST(req);
+    await handler(req as Request, res as Response);
 
     expect(db.collection).toHaveBeenCalledWith('users');
     expect(mockWhere).toHaveBeenCalledWith('stripeCustomerId', '==', 'cus_456');
@@ -160,21 +156,17 @@ describe('Stripe Webhook Route Handler', () => {
       subscriptionStatus: 'past_due',
     });
     expect(mockCommit).toHaveBeenCalled();
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json).toEqual({ received: true });
+    expect(res.json).toHaveBeenCalledWith({ received: true });
   });
 
   it('should gracefully handle webhook verification errors', async () => {
-    req = createMockRequest('mock-raw-body', 'mock-sig');
-
     mockConstructEvent.mockImplementationOnce(() => {
       throw new Error('Invalid signature');
     });
 
-    const res = await POST(req);
+    await handler(req as Request, res as Response);
 
-    expect(res.status).toBe(400);
-    expect(await res.text()).toBe('Webhook Error: Invalid signature');
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.send).toHaveBeenCalledWith('Webhook Error: Invalid signature');
   });
 });
