@@ -53,7 +53,6 @@ import { Section, CaseStudy, ProfileData, BrandingAsset, User } from './types';
 import Markdown from 'react-markdown';
 import { Chatbot } from './components/Chatbot';
 import { VoiceAgent } from './components/VoiceAgent';
-import { SectionErrorBoundary } from './components/SectionErrorBoundary';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -154,7 +153,7 @@ export default function App() {
   if (!isAuthReady) {
     return (
       <div className="h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
       </div>
     );
   }
@@ -162,10 +161,12 @@ export default function App() {
   if (!user) {
     return (
       <div className="h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-indigo-600/20">
-          <Sparkles className="w-10 h-10 text-white" />
+        <div className="w-20 h-20 bg-black rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-cyan-950/20">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 drop-shadow-[0_0_12px_#00FFFF]">
+            <path d="M22 2L12 22L9 15L2 12L22 2Z" fill="#00FFFF" />
+          </svg>
         </div>
-        <h1 className="text-4xl font-bold mb-4 tracking-tight">Freelance Success Agent</h1>
+        <h1 className="text-5xl font-serif font-extrabold mb-4 tracking-tight text-cyan-100">LANCE: <span className="text-white">success engine</span></h1>
         <p className="text-gray-400 max-w-md mb-8 leading-relaxed">
           Scale your freelancing career with AI-powered portfolios, profile curation, and real-time market insights.
         </p>
@@ -181,15 +182,17 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] text-white font-sans selection:bg-indigo-500/30">
+    <div className="flex h-screen bg-[#0a0a0a] text-white font-sans selection:bg-cyan-500/30">
       {/* Sidebar */}
       <aside className="w-64 border-r border-white/10 flex flex-col bg-[#0f0f0f]">
         <div className="p-6">
           <div className="flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 drop-shadow-[0_0_8px_#9900FF]">
+                <path d="M22 2L12 22L9 15L2 12L22 2Z" fill="#9900FF" />
+              </svg>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">FreelanceAgent</h1>
+            <h1 className="text-xl font-serif font-extrabold tracking-tight text-[#E6E6FA]">LANCE</h1>
           </div>
           
           <nav className="space-y-1">
@@ -200,23 +203,23 @@ export default function App() {
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                   activeSection === item.id 
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
+                    ? "bg-[radial-gradient(circle_at_center,_#581c87_0%,_#1e0b1c_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 text-white chiseled-text" 
                     : "text-gray-400 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <item.icon className={cn("w-5 h-5", activeSection === item.id ? "text-white" : "text-gray-400 group-hover:text-white")} />
-                <span className="font-medium">{item.label}</span>
+                <span className="font-serif font-semibold">{item.label}</span>
               </button>
             ))}
           </nav>
         </div>
         
         <div className="mt-auto p-6 border-t border-white/10 space-y-4">
-          <div className="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 p-4 rounded-2xl border border-indigo-500/20">
-            <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1">Pro Status</p>
+          <div className="bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 p-4 rounded-2xl">
+            <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-1">Pro Status</p>
             <p className="text-sm text-gray-300 mb-3">Your profile is 85% optimized for conversion.</p>
             <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-indigo-500 h-full w-[85%]" />
+              <div className="bg-purple-500 h-full w-[85%]" />
             </div>
           </div>
           
@@ -259,10 +262,10 @@ export default function App() {
               {activeSection === 'dashboard' && <DashboardView setActiveSection={setActiveSection} />}
               {activeSection === 'portfolio' && <PortfolioView user={user} caseStudies={caseStudies} />}
               {activeSection === 'profile' && <ProfileView user={user} profileData={profileData} />}
-              {activeSection === 'branding' && <SectionErrorBoundary><BrandingView user={user} assets={brandingAssets} /></SectionErrorBoundary>}
-              {activeSection === 'opportunities' && <SectionErrorBoundary><OpportunitiesView opportunities={opportunities} setOpportunities={setOpportunities} /></SectionErrorBoundary>}
-              {activeSection === 'chat' && <SectionErrorBoundary><Chatbot /></SectionErrorBoundary>}
-              {activeSection === 'voice' && <SectionErrorBoundary><VoiceAgent /></SectionErrorBoundary>}
+              {activeSection === 'branding' && <BrandingView user={user} assets={brandingAssets} />}
+              {activeSection === 'opportunities' && <OpportunitiesView opportunities={opportunities} setOpportunities={setOpportunities} />}
+              {activeSection === 'chat' && <Chatbot />}
+              {activeSection === 'voice' && <VoiceAgent />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -277,14 +280,14 @@ function DashboardView({ setActiveSection }: { setActiveSection: (s: Section) =>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           { label: 'Profile Views', value: '1.2k', trend: '+12%', color: 'text-emerald-400' },
-          { label: 'Conversion Rate', value: '4.8%', trend: '+0.5%', color: 'text-indigo-400' },
-          { label: 'Active Leads', value: '12', trend: '+2', color: 'text-purple-400' },
+          { label: 'Conversion Rate', value: '4.8%', trend: '+0.5%', color: 'text-cyan-400' },
+          { label: 'Active Leads', value: '12', trend: '+2', color: 'text-cyan-400' },
         ].map((stat, i) => (
           <div key={i} className="bg-[#141414] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
             <p className="text-sm text-gray-400 mb-1">{stat.label}</p>
             <div className="flex items-end gap-3">
-              <span className="text-3xl font-bold">{stat.value}</span>
-              <span className={cn("text-xs font-medium mb-1.5", stat.color)}>{stat.trend}</span>
+              <span className="text-4xl font-serif font-bold italic">{stat.value}</span>
+              <span className={cn("text-xs font-medium mb-2", stat.color)}>{stat.trend}</span>
             </div>
           </div>
         ))}
@@ -299,7 +302,7 @@ function DashboardView({ setActiveSection }: { setActiveSection: (s: Section) =>
               className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400">
                   <Briefcase className="w-5 h-5" />
                 </div>
                 <div className="text-left">
@@ -314,7 +317,7 @@ function DashboardView({ setActiveSection }: { setActiveSection: (s: Section) =>
               className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
+                <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400">
                   <Palette className="w-5 h-5" />
                 </div>
                 <div className="text-left">
@@ -327,13 +330,13 @@ function DashboardView({ setActiveSection }: { setActiveSection: (s: Section) =>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-3xl relative overflow-hidden group">
+        <div className="bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 p-8 rounded-3xl relative overflow-hidden group">
           <div className="relative z-10">
-            <h3 className="text-2xl font-bold mb-2">Ready to scale?</h3>
-            <p className="text-indigo-100/80 mb-6 max-w-[240px]">Our agent found 3 new high-paying niches in your field today.</p>
+            <h3 className="text-3xl font-serif font-extrabold mb-2">Ready to scale?</h3>
+            <p className="text-cyan-100/80 mb-6 max-w-[240px] font-sans">Our agent found 3 new high-paying niches in your field today.</p>
             <button 
               onClick={() => setActiveSection('opportunities')}
-              className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition-transform"
+              className="bg-white text-cyan-600 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition-transform font-sans"
             >
               View Opportunities <ArrowRight className="w-4 h-4" />
             </button>
@@ -385,12 +388,12 @@ function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStu
     <div className="space-y-8">
       <div className="bg-[#141414] p-6 rounded-2xl border border-white/5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">New Case Study</h3>
+          <h3 className="text-xl font-serif font-extrabold">New Case Study</h3>
           <button 
             onClick={() => setUseHighThinking(!useHighThinking)}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
-              useHighThinking ? "bg-indigo-500/20 border-indigo-500 text-indigo-400" : "bg-white/5 border-white/10 text-gray-500"
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border font-sans",
+              useHighThinking ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
             )}
           >
             <BrainCircuit className="w-4 h-4" />
@@ -402,12 +405,12 @@ function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStu
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Describe a project you worked on (e.g., 'Built a SaaS dashboard for a fintech startup that reduced churn by 15%')"
-            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none min-h-[120px] transition-all"
+            className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm focus:ring-2 focus:ring-cyan-500 outline-none min-h-[120px] transition-all"
           />
           <button
             onClick={handleGenerate}
             disabled={isGenerating || !input}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+            className="w-full bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
           >
             {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
             Generate Case Study
@@ -417,11 +420,11 @@ function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStu
 
       <div className="grid grid-cols-1 gap-6">
         {caseStudies.map((study) => (
-          <div key={study.id} className="bg-[#141414] p-8 rounded-2xl border border-white/5 hover:border-indigo-500/30 transition-all group">
+          <div key={study.id} className="bg-[#141414] p-8 rounded-2xl border border-white/5 hover:border-cyan-500/30 transition-all group">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h4 className="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">{study.title}</h4>
-                <p className="text-sm text-gray-500">Client: {study.client}</p>
+                <h4 className="text-2xl font-serif font-extrabold text-white group-hover:text-cyan-400 transition-colors">{study.title}</h4>
+                <p className="text-sm text-gray-500 font-sans">Client: {study.client}</p>
               </div>
               <div className="flex gap-2">
                 {study.tags.map(tag => (
@@ -432,16 +435,16 @@ function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStu
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div>
-                <p className="text-xs font-bold text-indigo-400 uppercase mb-2">Challenge</p>
+                <p className="text-xs font-bold text-cyan-400 uppercase mb-2">Challenge</p>
                 <p className="text-sm text-gray-300 leading-relaxed">{study.challenge}</p>
               </div>
               <div>
-                <p className="text-xs font-bold text-purple-400 uppercase mb-2">Solution</p>
+                <p className="text-xs font-bold text-cyan-400 uppercase mb-2">Solution</p>
                 <p className="text-sm text-gray-300 leading-relaxed">{study.solution}</p>
               </div>
-              <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
+              <div className="bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] p-4 rounded-xl border border-white/10">
                 <p className="text-xs font-bold text-emerald-400 uppercase mb-2">Results</p>
-                <p className="text-sm text-white font-medium leading-relaxed">{study.results}</p>
+                <p className="text-sm text-white font-medium leading-relaxed chiseled-text">{study.results}</p>
               </div>
             </div>
           </div>
@@ -485,14 +488,14 @@ function ProfileView({ user, profileData }: { user: User, profileData: ProfileDa
   return (
     <div className="space-y-8">
       <div className="bg-[#141414] p-6 rounded-2xl border border-white/5">
-        <h3 className="text-lg font-bold mb-4">Profile Optimizer</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <h3 className="text-xl font-serif font-extrabold mb-4">Profile Optimizer</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 font-sans">
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Platform</label>
             <select 
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
             >
               <option>Upwork</option>
               <option>Fiverr</option>
@@ -507,14 +510,14 @@ function ProfileView({ user, profileData }: { user: User, profileData: ProfileDa
               value={skills}
               onChange={(e) => setSkills(e.target.value)}
               placeholder="e.g. React, UI Design, Copywriting"
-              className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
         </div>
         <button
           onClick={handleGenerate}
           disabled={isGenerating || !skills}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+          className="w-full bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserCircle className="w-5 h-5" />}
           Curate Profile
@@ -524,14 +527,14 @@ function ProfileView({ user, profileData }: { user: User, profileData: ProfileDa
       {profileData && (
         <div className="bg-[#141414] p-8 rounded-3xl border border-white/5 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-6">
-            <span className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-full text-xs font-bold uppercase tracking-widest border border-indigo-500/20">
+            <span className="px-3 py-1 bg-cyan-500/20 text-cyan-400 rounded-full text-xs font-bold uppercase tracking-widest border border-cyan-500/20 chiseled-text">
               {profileData.platform}
             </span>
           </div>
           
           <div className="max-w-2xl">
-            <h4 className="text-2xl font-bold mb-4 text-white">{profileData.headline}</h4>
-            <div className="prose prose-invert prose-sm mb-8">
+            <h4 className="text-3xl font-serif font-extrabold mb-4 text-white">{profileData.headline}</h4>
+            <div className="prose prose-invert prose-sm mb-8 font-sans">
               <Markdown>{profileData.bio}</Markdown>
             </div>
             
@@ -562,8 +565,11 @@ function ProfileView({ user, profileData }: { user: User, profileData: ProfileDa
 function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [type, setType] = useState<'banner' | 'profile-pic' | 'video'>('banner');
+  const [type, setType] = useState<'banner' | 'profile-pic' | 'video' | 'social-post'>('banner');
   const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
+  const [postDimension, setPostDimension] = useState<'Square' | 'Portrait' | 'Landscape'>('Square');
+  const [contentFocus, setContentFocus] = useState<'Educational' | 'Promotional' | 'Personal'>('Educational');
+  const [includeVoiceover, setIncludeVoiceover] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const onDrop = (acceptedFiles: File[]) => {
@@ -584,7 +590,28 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
     setIsGenerating(true);
     try {
       let url = '';
-      if (type === 'video') {
+      let caption = '';
+      
+      if (type === 'social-post') {
+        const captionPrompt = `Generate a high-conversion social media caption for a ${contentFocus} post. 
+        Topic: ${prompt}. 
+        Platform: General Social Media. 
+        Include relevant hashtags and a call to action.`;
+        caption = await generateContent(captionPrompt, "You are a world-class social media manager and copywriter.");
+
+        if (includeVoiceover) {
+          if (!uploadedFile) throw new Error("Please upload a photo first for video generation");
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(uploadedFile);
+          });
+          url = await animateImageToVideo(base64, uploadedFile.type, `Create a professional ${contentFocus} video post about: ${prompt}`);
+        } else {
+          const aspectRatio = postDimension === 'Square' ? '1:1' : postDimension === 'Portrait' ? '4:5' : '16:9';
+          url = await generateHighQualityImage(`A professional ${contentFocus} social media post visual about: ${prompt}`, imageSize, aspectRatio);
+        }
+      } else if (type === 'video') {
         if (!uploadedFile) throw new Error("Please upload a photo first");
         const reader = new FileReader();
         const base64 = await new Promise<string>((resolve) => {
@@ -603,6 +630,7 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
         type,
         url,
         prompt: prompt || "Generated from photo",
+        caption: caption || undefined,
         createdAt: Date.now()
       });
       setPrompt('');
@@ -670,7 +698,7 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
                   value={editPrompt}
                   onChange={(e) => setEditPrompt(e.target.value)}
                   placeholder="What would you like to change? (e.g. 'Add a sunset background')"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
                 />
                 <div className="flex gap-3">
                   <button 
@@ -682,7 +710,7 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
                   <button 
                     onClick={handleEdit}
                     disabled={isGenerating || !editPrompt}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                    className="flex-1 bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
                   >
                     {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
                     Apply Edit
@@ -695,11 +723,12 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
       </AnimatePresence>
 
       <div className="bg-[#141414] p-6 rounded-2xl border border-white/5">
-        <h3 className="text-lg font-bold mb-4">Branding Studio</h3>
-        <div className="flex flex-wrap gap-3 mb-6">
+        <h3 className="text-xl font-serif font-extrabold mb-4">Branding Studio</h3>
+        <div className="flex flex-wrap gap-3 mb-6 font-sans">
           {[
             { id: 'banner', label: 'Banner', icon: ImageIcon },
             { id: 'profile-pic', label: 'Profile Pic', icon: UserCircle },
+            { id: 'social-post', label: 'Social Post', icon: MessageSquare },
             { id: 'video', label: 'Video (Veo)', icon: Video },
           ].map((t) => (
             <button 
@@ -707,7 +736,7 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
               onClick={() => setType(t.id as any)}
               className={cn(
                 "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all border",
-                type === t.id ? "bg-indigo-600 border-indigo-400 text-white" : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+                type === t.id ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-white chiseled-text" : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
               )}
             >
               <t.icon className="w-4 h-4" />
@@ -716,7 +745,58 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
           ))}
         </div>
 
-        {type !== 'video' && (
+        {type === 'social-post' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 font-sans">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Post Dimensions</label>
+              <div className="flex gap-2">
+                {['Square', 'Portrait', 'Landscape'].map((dim) => (
+                  <button
+                    key={dim}
+                    onClick={() => setPostDimension(dim as any)}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
+                      postDimension === dim ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                    )}
+                  >
+                    {dim}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Content Focus</label>
+              <select 
+                value={contentFocus}
+                onChange={(e) => setContentFocus(e.target.value as any)}
+                className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+              >
+                <option>Educational</option>
+                <option>Promotional</option>
+                <option>Personal</option>
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div 
+                  onClick={() => setIncludeVoiceover(!includeVoiceover)}
+                  className={cn(
+                    "w-12 h-6 rounded-full transition-all relative",
+                    includeVoiceover ? "bg-cyan-500" : "bg-white/10"
+                  )}
+                >
+                  <div className={cn(
+                    "absolute top-1 w-4 h-4 rounded-full bg-white transition-all",
+                    includeVoiceover ? "left-7" : "left-1"
+                  )} />
+                </div>
+                <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">Include AI Voiceover / Video Elements</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {type !== 'video' && type !== 'social-post' && (
           <div className="mb-6">
             <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Resolution</label>
             <div className="flex gap-2">
@@ -726,7 +806,7 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
                   onClick={() => setImageSize(size as any)}
                   className={cn(
                     "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
-                    imageSize === size ? "bg-indigo-500/20 border-indigo-500 text-indigo-400" : "bg-white/5 border-white/10 text-gray-500"
+                    imageSize === size ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
                   )}
                 >
                   {size}
@@ -736,10 +816,10 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
           </div>
         )}
 
-        {type === 'video' && (
+        {(type === 'video' || type === 'social-post') && (
           <div {...getRootProps()} className={cn(
             "mb-6 border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer",
-            isDragActive ? "border-indigo-500 bg-indigo-500/5" : "border-white/10 hover:border-white/20 bg-black/20"
+            isDragActive ? "border-cyan-500 bg-cyan-500/5" : "border-white/10 hover:border-white/20 bg-black/20"
           )}>
             <input {...getInputProps()} />
             <div className="flex flex-col items-center gap-3">
@@ -747,11 +827,13 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
                 <Upload className="w-6 h-6 text-gray-400" />
               </div>
               {uploadedFile ? (
-                <p className="text-sm text-indigo-400 font-medium">{uploadedFile.name}</p>
+                <p className="text-sm text-cyan-400 font-medium">{uploadedFile.name}</p>
               ) : (
                 <>
                   <p className="text-sm font-medium">Drop a photo here or click to upload</p>
-                  <p className="text-xs text-gray-500 text-balance">Veo will animate this photo into a professional video</p>
+                  <p className="text-xs text-gray-500 text-balance">
+                    {type === 'video' ? 'Veo will animate this photo into a professional video' : 'Use this as the base for your social media post'}
+                  </p>
                 </>
               )}
             </div>
@@ -764,12 +846,12 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={type === 'video' ? "Describe the animation (optional)" : "Describe your style (e.g. 'Minimalist Tech', 'Vibrant Creative')"}
-            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
           />
           <button
             onClick={handleGenerate}
             disabled={isGenerating || (!prompt && !uploadedFile)}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+            className="w-full bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
           >
             {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Palette className="w-5 h-5" />}
             {type === 'video' ? 'Generate Video' : 'Generate Asset'}
@@ -780,8 +862,8 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {assets.map((asset) => (
           <div key={asset.id} className="bg-[#141414] rounded-3xl overflow-hidden border border-white/5 group">
-            <div className={cn("relative overflow-hidden", asset.type === 'banner' ? "aspect-video" : "aspect-square")}>
-              {asset.type === 'video' ? (
+            <div className={cn("relative overflow-hidden", asset.type === 'banner' ? "aspect-video" : asset.type === 'social-post' ? "aspect-[4/5]" : "aspect-square")}>
+              {asset.type === 'video' || (asset.type === 'social-post' && asset.url.includes('.mp4')) ? (
                 <video src={asset.url} controls className="w-full h-full object-cover" />
               ) : (
                 <img 
@@ -805,8 +887,13 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
               </div>
             </div>
             <div className="p-4">
-              <p className="text-xs font-bold text-indigo-400 uppercase mb-1">{asset.type.replace('-', ' ')}</p>
-              <p className="text-sm text-gray-400 truncate">{asset.prompt}</p>
+              <p className="text-xs font-bold text-cyan-400 uppercase mb-1">{asset.type.replace('-', ' ')}</p>
+              <p className="text-sm text-gray-400 truncate mb-2">{asset.prompt}</p>
+              {asset.caption && (
+                <div className="bg-black/20 p-3 rounded-lg border border-white/5">
+                  <p className="text-xs text-gray-300 line-clamp-3 italic">"{asset.caption}"</p>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -839,30 +926,30 @@ function OpportunitiesView({ opportunities, setOpportunities }: { opportunities:
     <div className="space-y-8">
       <div className="bg-[#141414] p-6 rounded-2xl border border-white/5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">Opportunity Finder</h3>
+          <h3 className="text-xl font-serif font-extrabold">Opportunity Finder</h3>
           <button 
             onClick={() => setUseHighThinking(!useHighThinking)}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border",
-              useHighThinking ? "bg-indigo-500/20 border-indigo-500 text-indigo-400" : "bg-white/5 border-white/10 text-gray-500"
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border font-sans",
+              useHighThinking ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
             )}
           >
             <BrainCircuit className="w-4 h-4" />
             High Thinking Mode
           </button>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 font-sans">
           <input 
             type="text"
             value={niche}
             onChange={(e) => setNiche(e.target.value)}
             placeholder="Enter your niche (e.g. 'AI Automation', 'Web3 Development')"
-            className="flex-1 bg-black/40 border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
           />
           <button
             onClick={handleSearch}
             disabled={isGenerating || !niche}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-8 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+            className="bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 px-8 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
           >
             {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <TrendingUp className="w-5 h-5" />}
             Find
@@ -876,9 +963,9 @@ function OpportunitiesView({ opportunities, setOpportunities }: { opportunities:
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
               <TrendingUp className="w-5 h-5" />
             </div>
-            <h4 className="text-xl font-bold">Market Analysis: {niche}</h4>
+            <h4 className="text-2xl font-serif font-extrabold">Market Analysis: {niche}</h4>
           </div>
-          <div className="prose prose-invert max-w-none">
+          <div className="prose prose-invert max-w-none font-sans">
             <Markdown>{opportunities}</Markdown>
           </div>
         </div>

@@ -12,11 +12,44 @@ export function VoiceAgent() {
   const sessionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const audioQueue = useRef<Int16Array[]>([]);
+  const isPlaying = useRef(false);
+
+  const playNextInQueue = async () => {
+    if (audioQueue.current.length === 0 || isPlaying.current || isMuted) return;
+    
+    isPlaying.current = true;
+    const pcmData = audioQueue.current.shift()!;
+    
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+    }
+    
+    const buffer = audioContextRef.current.createBuffer(1, pcmData.length, 24000);
+    const channelData = buffer.getChannelData(0);
+    for (let i = 0; i < pcmData.length; i++) {
+      channelData[i] = pcmData[i] / 32768;
+    }
+    
+    const source = audioContextRef.current.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContextRef.current.destination);
+    source.onended = () => {
+      isPlaying.current = false;
+      playNextInQueue();
+    };
+    source.start();
+  };
 
   const toggleSession = async () => {
     if (isActive) {
-      sessionRef.current?.disconnect();
+      sessionRef.current?.close();
       streamRef.current?.getTracks().forEach(track => track.stop());
+      processorRef.current?.disconnect();
+      if (audioContextRef.current?.state !== 'closed') {
+        audioContextRef.current?.close();
+      }
       setIsActive(false);
       return;
     }
@@ -24,7 +57,17 @@ export function VoiceAgent() {
     setIsConnecting(true);
     try {
       const session = await startLiveSession(
-        "You are a voice-enabled Freelance Success Agent. You can hear the user and respond in real-time. Be concise, helpful, and professional."
+        "You are a voice-enabled LANCE: success engine. You can hear the user and respond in real-time. Be concise, helpful, and professional.",
+        (base64Data) => {
+          const binary = atob(base64Data);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          const pcm16 = new Int16Array(bytes.buffer);
+          audioQueue.current.push(pcm16);
+          playNextInQueue();
+        }
       );
       sessionRef.current = session;
 
@@ -32,8 +75,27 @@ export function VoiceAgent() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
-      // Setup audio output (PCM handling would go here in a full implementation)
-      // For this demo, we'll simulate the connection state
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = audioContext;
+      const source = audioContext.createMediaStreamSource(stream);
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+
+      processor.onaudioprocess = (e) => {
+        if (isMuted) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          pcm16[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
+        }
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+        session.sendRealtimeInput({
+          audio: { data: base64, mimeType: 'audio/pcm;rate=16000' }
+        });
+      };
+
+      source.connect(processor);
+      processor.connect(audioContext.destination);
       
       setIsActive(true);
     } catch (error) {
@@ -68,7 +130,7 @@ export function VoiceAgent() {
                     repeat: Infinity,
                     delay: i * 1,
                   }}
-                  className="absolute w-64 h-64 border border-indigo-500/30 rounded-full"
+                  className="absolute w-64 h-64 border border-cyan-500/30 rounded-full"
                 />
               ))}
             </motion.div>
@@ -78,8 +140,8 @@ export function VoiceAgent() {
 
       <div className="relative z-10 flex flex-col items-center space-y-12">
         <div className="text-center space-y-4">
-          <h3 className="text-3xl font-bold tracking-tight">Voice Conversation</h3>
-          <p className="text-gray-400 max-w-xs mx-auto">
+          <h3 className="text-4xl font-serif font-extrabold tracking-tight">Voice Conversation</h3>
+          <p className="text-gray-400 max-w-xs mx-auto font-sans">
             {isActive 
               ? "I'm listening. Ask me anything about your freelance business." 
               : "Connect to start a real-time voice conversation with your career agent."}
@@ -96,7 +158,7 @@ export function VoiceAgent() {
               "w-32 h-32 rounded-full flex items-center justify-center transition-all duration-500 relative z-20",
               isActive 
                 ? "bg-red-500 shadow-2xl shadow-red-500/40" 
-                : "bg-indigo-600 shadow-2xl shadow-indigo-600/40"
+                : "bg-cyan-600 shadow-2xl shadow-cyan-600/40"
             )}
           >
             {isConnecting ? (
@@ -109,7 +171,7 @@ export function VoiceAgent() {
           </motion.button>
           
           {isActive && (
-            <div className="absolute -inset-4 bg-indigo-500/20 rounded-full animate-ping pointer-events-none" />
+            <div className="absolute -inset-4 bg-cyan-500/20 rounded-full animate-ping pointer-events-none" />
           )}
         </div>
 
@@ -132,7 +194,7 @@ export function VoiceAgent() {
                   repeat: Infinity,
                   delay: i * 0.1,
                 }}
-                className="w-1.5 bg-indigo-500 rounded-full"
+                className="w-1.5 bg-cyan-500 rounded-full"
               />
             ))}
           </div>
@@ -140,7 +202,7 @@ export function VoiceAgent() {
       </div>
 
       <div className="absolute bottom-8 left-8 right-8 flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-widest">
-        <span>Model: Gemini 3.1 Flash Live</span>
+        <span>Model: Gemini 3.1 Flash Lite</span>
         <span className={cn(isActive ? "text-emerald-400" : "text-gray-500")}>
           {isActive ? "Connected" : "Disconnected"}
         </span>

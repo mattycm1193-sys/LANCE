@@ -16,7 +16,7 @@ export function Chatbot() {
   useEffect(() => {
     if (!chatRef.current) {
       chatRef.current = createChat(
-        "You are a specialized Freelancing Career Coach. Your goal is to help freelancers optimize their profiles, find high-paying clients, and scale their business. Be professional, encouraging, and data-driven.",
+        "You are LANCE: success engine, a specialized Freelancing Career Coach. Your goal is to help freelancers optimize their profiles, find high-paying clients, and scale their business. Be professional, encouraging, and data-driven.",
         "gemini-3.1-pro-preview"
       );
     }
@@ -52,18 +52,18 @@ export function Chatbot() {
     <div className="flex flex-col h-[600px] bg-[#141414] rounded-3xl border border-white/5 overflow-hidden">
       <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+          <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
             <Bot className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-bold">Freelance Coach</h3>
-            <p className="text-xs text-emerald-400 flex items-center gap-1">
+            <h3 className="font-serif font-extrabold">LANCE: <span className="font-sans font-normal">success engine</span></h3>
+            <p className="text-xs text-emerald-400 flex items-center gap-1 font-sans">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Online
             </p>
           </div>
         </div>
-        <Sparkles className="w-5 h-5 text-indigo-400" />
+        <Sparkles className="w-5 h-5 text-cyan-400" />
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">
@@ -88,13 +88,13 @@ export function Chatbot() {
           >
             <div className={cn(
               "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border",
-              msg.role === 'user' ? "bg-indigo-600 border-indigo-400" : "bg-white/5 border-white/10"
+              msg.role === 'user' ? "bg-cyan-600 border-cyan-400" : "bg-white/5 border-white/10"
             )}>
               {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
             </div>
             <div className={cn(
               "p-4 rounded-2xl text-sm leading-relaxed",
-              msg.role === 'user' ? "bg-indigo-600 text-white rounded-tr-none" : "bg-white/5 text-gray-200 rounded-tl-none border border-white/5"
+              msg.role === 'user' ? "bg-cyan-600 text-white rounded-tr-none" : "bg-white/5 text-gray-200 rounded-tl-none border border-white/5"
             )}>
               <div className="markdown-body">
                 <Markdown>{msg.text}</Markdown>
@@ -108,7 +108,7 @@ export function Chatbot() {
               <Bot className="w-4 h-4" />
             </div>
             <div className="p-4 bg-white/5 rounded-2xl rounded-tl-none border border-white/5">
-              <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
             </div>
           </div>
         )}
@@ -122,12 +122,12 @@ export function Chatbot() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type your message..."
-            className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-6 pr-14 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+            className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-6 pr-14 text-sm outline-none focus:ring-2 focus:ring-cyan-500 transition-all"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="absolute right-2 top-2 p-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-xl transition-all"
+            className="absolute right-2 top-2 p-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 rounded-xl transition-all"
           >
             <Send className="w-5 h-5" />
           </button>

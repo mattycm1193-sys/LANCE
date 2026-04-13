@@ -36,6 +36,7 @@ export interface BrandingAsset {
   type: 'banner' | 'profile-pic' | 'social-post' | 'video';
   url: string;
   prompt: string;
+  caption?: string;
   createdAt: number;
 }
 
