@@ -17,9 +17,9 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Data Connect Initialization
 export const dataconnect = getDataConnect(app, {
-  location: import.meta.env.VITE_FIREBASE_DATACONNECT_LOCATION || 'us-central1',
-  service: import.meta.env.VITE_FIREBASE_DATACONNECT_SERVICE_ID,
-  connector: import.meta.env.VITE_FIREBASE_DATACONNECT_CONNECTOR_ID,
+  location: 'northamerica-northeast1',
+  service: 'dataconnect',
+  connector: 'default'
 });
 
 if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_DATACONNECT_EMULATOR_HOST) {
