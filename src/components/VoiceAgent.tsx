@@ -202,7 +202,7 @@ export function VoiceAgent() {
       </div>
 
       <div className="absolute bottom-8 left-8 right-8 flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-widest">
-        <span>Model: Gemini 3.1 Flash Lite</span>
+        <span>Model: Gemini 3.1 Flash Live (Low Latency)</span>
         <span className={cn(isActive ? "text-emerald-400" : "text-gray-500")}>
           {isActive ? "Connected" : "Disconnected"}
         </span>

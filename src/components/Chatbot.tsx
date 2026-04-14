@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, User, Bot, Sparkles } from 'lucide-react';
+import { Send, Loader2, User, Bot, Sparkles, BrainCircuit } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { createChat } from '../services/gemini';
 import { ChatMessage } from '../types';
@@ -10,17 +10,21 @@ export function Chatbot() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [useHighThinking, setUseHighThinking] = useState(false);
   const chatRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const initChat = () => {
+    chatRef.current = createChat(
+      "You are LANCE: success engine, a specialized Freelancing Career Coach. Your goal is to help freelancers optimize their profiles, find high-paying clients, and scale their business. Be professional, encouraging, and data-driven.",
+      useHighThinking ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview",
+      useHighThinking
+    );
+  };
+
   useEffect(() => {
-    if (!chatRef.current) {
-      chatRef.current = createChat(
-        "You are LANCE: success engine, a specialized Freelancing Career Coach. Your goal is to help freelancers optimize their profiles, find high-paying clients, and scale their business. Be professional, encouraging, and data-driven.",
-        "gemini-3.1-pro-preview"
-      );
-    }
-  }, []);
+    initChat();
+  }, [useHighThinking]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -63,7 +67,19 @@ export function Chatbot() {
             </p>
           </div>
         </div>
-        <Sparkles className="w-5 h-5 text-cyan-400" />
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setUseHighThinking(!useHighThinking)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border font-sans",
+              useHighThinking ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+            )}
+          >
+            <BrainCircuit className="w-4 h-4" />
+            High Thinking
+          </button>
+          <Sparkles className="w-5 h-5 text-cyan-400" />
+        </div>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">

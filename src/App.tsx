@@ -27,6 +27,7 @@ import {
   generateContent, 
   generateContentWithThinking, 
   generateHighQualityImage, 
+  generateImage,
   editImage, 
   animateImageToVideo, 
   findOpportunities 
@@ -514,14 +515,39 @@ function ProfileView({ user, profileData }: { user: User, profileData: ProfileDa
             />
           </div>
         </div>
-        <button
-          onClick={handleGenerate}
-          disabled={isGenerating || !skills}
-          className="w-full bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
-        >
-          {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserCircle className="w-5 h-5" />}
-          Curate Profile
-        </button>
+        <div className="flex gap-4 items-center">
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating || !skills}
+            className="flex-1 bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
+          >
+            {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserCircle className="w-5 h-5" />}
+            Curate Profile
+          </button>
+          {profileData && (
+            <button
+              onClick={async () => {
+                setIsGenerating(true);
+                try {
+                  const analysis = await generateContentWithThinking(
+                    `Analyze this freelance profile and suggest 3 high-impact improvements to increase conversion and pricing power: ${JSON.stringify(profileData)}`,
+                    "You are a world-class freelance business consultant."
+                  );
+                  alert(analysis);
+                } catch (e) {
+                  console.error(e);
+                } finally {
+                  setIsGenerating(false);
+                }
+              }}
+              disabled={isGenerating}
+              className="px-6 py-3 rounded-xl font-bold border border-white/10 hover:bg-white/5 transition-all flex items-center gap-2 text-gray-400 hover:text-white"
+            >
+              <BrainCircuit className="w-5 h-5" />
+              Smart Analysis
+            </button>
+          )}
+        </div>
       </div>
 
       {profileData && (
@@ -567,6 +593,8 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
   const [prompt, setPrompt] = useState('');
   const [type, setType] = useState<'banner' | 'profile-pic' | 'video' | 'social-post'>('banner');
   const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
+  const [aspectRatio, setAspectRatio] = useState<string>('1:1');
+  const [imageQuality, setImageQuality] = useState<'Standard' | 'Studio'>('Standard');
   const [postDimension, setPostDimension] = useState<'Square' | 'Portrait' | 'Landscape'>('Square');
   const [contentFocus, setContentFocus] = useState<'Educational' | 'Promotional' | 'Personal'>('Educational');
   const [includeVoiceover, setIncludeVoiceover] = useState(false);
@@ -608,8 +636,10 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
           });
           url = await animateImageToVideo(base64, uploadedFile.type, `Create a professional ${contentFocus} video post about: ${prompt}`);
         } else {
-          const aspectRatio = postDimension === 'Square' ? '1:1' : postDimension === 'Portrait' ? '4:5' : '16:9';
-          url = await generateHighQualityImage(`A professional ${contentFocus} social media post visual about: ${prompt}`, imageSize, aspectRatio);
+          const ar = postDimension === 'Square' ? '1:1' : postDimension === 'Portrait' ? '4:5' : '16:9';
+          url = imageQuality === 'Studio' 
+            ? await generateHighQualityImage(`A professional ${contentFocus} social media post visual about: ${prompt}`, imageSize, ar)
+            : await generateImage(`A professional ${contentFocus} social media post visual about: ${prompt}`, ar);
         }
       } else if (type === 'video') {
         if (!uploadedFile) throw new Error("Please upload a photo first");
@@ -620,7 +650,9 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
         });
         url = await animateImageToVideo(base64, uploadedFile.type, prompt || "Animate this photo professionally");
       } else {
-        url = await generateHighQualityImage(prompt, imageSize, type === 'banner' ? '16:9' : '1:1');
+        url = imageQuality === 'Studio'
+          ? await generateHighQualityImage(prompt, imageSize, type === 'banner' ? '16:9' : aspectRatio)
+          : await generateImage(prompt, type === 'banner' ? '16:9' : aspectRatio);
       }
 
       const assetId = doc(collection(db, 'brandingAssets')).id;
@@ -745,6 +777,63 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
           ))}
         </div>
 
+        {type !== 'video' && type !== 'social-post' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 font-sans">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Aspect Ratio</label>
+              <div className="flex flex-wrap gap-2">
+                {['1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21:9'].map((ar) => (
+                  <button
+                    key={ar}
+                    onClick={() => setAspectRatio(ar)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all",
+                      aspectRatio === ar ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                    )}
+                  >
+                    {ar}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Quality & Size</label>
+              <div className="flex gap-4 items-center">
+                <div className="flex gap-2">
+                  {['Standard', 'Studio'].map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => setImageQuality(q as any)}
+                      className={cn(
+                        "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
+                        imageQuality === q ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                      )}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+                {imageQuality === 'Studio' && (
+                  <div className="flex gap-2">
+                    {['1K', '2K', '4K'].map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setImageSize(size as any)}
+                        className={cn(
+                          "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
+                          imageSize === size ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                        )}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {type === 'social-post' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 font-sans">
             <div>
@@ -765,6 +854,23 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
               </div>
             </div>
             <div>
+              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Image Quality</label>
+              <div className="flex gap-2">
+                {['Standard', 'Studio'].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => setImageQuality(q as any)}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
+                      imageQuality === q ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                    )}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
               <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Content Focus</label>
               <select 
                 value={contentFocus}
@@ -776,7 +882,8 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
                 <option>Personal</option>
               </select>
             </div>
-            <div className="md:col-span-2">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">AI Video / Voiceover</label>
               <label className="flex items-center gap-3 cursor-pointer group">
                 <div 
                   onClick={() => setIncludeVoiceover(!includeVoiceover)}
@@ -790,28 +897,8 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
                     includeVoiceover ? "left-7" : "left-1"
                   )} />
                 </div>
-                <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">Include AI Voiceover / Video Elements</span>
+                <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">Enable Veo Animation</span>
               </label>
-            </div>
-          </div>
-        )}
-
-        {type !== 'video' && type !== 'social-post' && (
-          <div className="mb-6">
-            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Resolution</label>
-            <div className="flex gap-2">
-              {['1K', '2K', '4K'].map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setImageSize(size as any)}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
-                    imageSize === size ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
-                  )}
-                >
-                  {size}
-                </button>
-              ))}
             </div>
           </div>
         )}

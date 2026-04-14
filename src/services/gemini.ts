@@ -50,6 +50,27 @@ export const generateHighQualityImage = async (prompt: string, size: "1K" | "2K"
   throw new Error("No image generated");
 };
 
+export const generateImage = async (prompt: string, aspectRatio: string = "1:1") => {
+  const response = await ai.models.generateContent({
+    model: "gemini-3.1-flash-image-preview",
+    contents: {
+      parts: [{ text: prompt }],
+    },
+    config: {
+      imageConfig: {
+        aspectRatio: aspectRatio as any,
+      },
+    },
+  });
+
+  for (const part of response.candidates?.[0]?.content?.parts || []) {
+    if (part.inlineData) {
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    }
+  }
+  throw new Error("No image generated");
+};
+
 export const editImage = async (prompt: string, base64Image: string, mimeType: string) => {
   const response = await ai.models.generateContent({
     model: "gemini-3.1-flash-image-preview",
@@ -100,7 +121,7 @@ export const animateImageToVideo = async (base64Image: string, mimeType: string,
 
 export const findOpportunities = async (niche: string) => {
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-3-flash-preview",
     contents: `Find current high-demand monetization opportunities and revenue trends for a freelancer in the ${niche} niche. Focus on high-conversion services and emerging platforms.`,
     config: {
       tools: [{ googleSearch: {} }],
@@ -109,11 +130,17 @@ export const findOpportunities = async (niche: string) => {
   return response.text;
 };
 
-export const createChat = (systemInstruction: string, model: string = "gemini-3.1-flash-lite-preview") => {
+export const createChat = (systemInstruction: string, model: string = "gemini-3.1-flash-lite-preview", useThinking: boolean = false) => {
   return ai.chats.create({
     model,
     config: {
       systemInstruction,
+      tools: [{ googleSearch: {} }],
+      ...(useThinking && {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.HIGH,
+        },
+      }),
     },
   });
 };
