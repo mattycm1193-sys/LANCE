@@ -270,7 +270,7 @@ export default function App() {
               {activeSection === 'portfolio' && <PortfolioView user={user} caseStudies={caseStudies} />}
               {activeSection === 'profile' && <ProfileView user={user} profileData={profileData} />}
               {activeSection === 'branding' && <BrandingView user={user} assets={brandingAssets} />}
-              {activeSection === 'opportunities' && <OpportunitiesView opportunities={opportunities} setOpportunities={setOpportunities} />}
+              {activeSection === 'opportunities' && <OpportunitiesView />}
               {activeSection === 'chat' && <Chatbot />}
               {activeSection === 'voice' && <VoiceAgent />}
             </motion.div>
@@ -995,19 +995,27 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
   );
 }
 
-function OpportunitiesView({ opportunities, setOpportunities }: { opportunities: string, setOpportunities: (o: string) => void }) {
+function OpportunitiesView() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [niche, setNiche] = useState('');
-  const [useHighThinking, setUseHighThinking] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
 
   const handleSearch = async () => {
     if (!niche) return;
     setIsGenerating(true);
     try {
-      const result = useHighThinking 
-        ? await generateContentWithThinking(`Analyze high-demand monetization opportunities for a freelancer in the ${niche} niche. Focus on high-conversion services and emerging platforms. Use search grounding.`, "You are a world-class market analyst.")
-        : await findOpportunities(niche);
-      setOpportunities(result);
+      const response = await fetch('/api/findOpportunities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: niche }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch opportunities');
+      
+      const data = await response.json();
+      setResults(data.opportunities || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -1020,16 +1028,6 @@ function OpportunitiesView({ opportunities, setOpportunities }: { opportunities:
       <div className="bg-[#141414] p-6 rounded-2xl border border-white/5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-serif font-extrabold">Opportunity Finder</h3>
-          <button 
-            onClick={() => setUseHighThinking(!useHighThinking)}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border font-sans",
-              useHighThinking ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
-            )}
-          >
-            <BrainCircuit className="w-4 h-4" />
-            High Thinking Mode
-          </button>
         </div>
         <div className="flex gap-4 font-sans">
           <input 
@@ -1042,25 +1040,63 @@ function OpportunitiesView({ opportunities, setOpportunities }: { opportunities:
           <button
             onClick={handleSearch}
             disabled={isGenerating || !niche}
-            className="bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 px-8 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
+            className="bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 px-8 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text min-w-[140px]"
           >
-            {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <TrendingUp className="w-5 h-5" />}
-            Find
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Scanning...
+              </>
+            ) : (
+              <>
+                <TrendingUp className="w-5 h-5" />
+                Find
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      {opportunities && (
-        <div className="bg-[#141414] p-8 rounded-3xl border border-white/5">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <h4 className="text-2xl font-serif font-extrabold">Market Analysis: {niche}</h4>
-          </div>
-          <div className="prose prose-invert max-w-none font-sans">
-            <Markdown>{opportunities}</Markdown>
-          </div>
+      {results.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {results.map((opp, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-[#141414] p-6 rounded-3xl border border-white/5 hover:border-cyan-500/30 transition-all group relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-4">
+                <div className="px-2 py-1 bg-cyan-500/10 text-cyan-400 rounded text-[10px] font-bold uppercase tracking-wider border border-cyan-500/20">
+                  {opp.difficulty || 'Emerging'}
+                </div>
+              </div>
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-serif font-extrabold text-white group-hover:text-cyan-400 transition-colors leading-tight">
+                    {opp.title}
+                  </h4>
+                  <p className="text-xs text-emerald-400 font-bold uppercase tracking-widest mt-1">
+                    Potential: {opp.potential || '$5k - $15k / mo'}
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-400 leading-relaxed font-sans mb-4">
+                {opp.description}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {opp.tags?.map((tag: string) => (
+                  <span key={tag} className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold text-gray-500 uppercase">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          ))}
         </div>
       )}
     </div>
