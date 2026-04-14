@@ -36,7 +36,7 @@ import {
   auth, 
   db, 
   googleProvider, 
-  signInWithPopup, 
+  signInWithRedirect, 
   signOut, 
   onAuthStateChanged, 
   collection, 
@@ -48,7 +48,8 @@ import {
   orderBy,
   getDocFromServer,
   handleFirestoreError,
-  OperationType
+  OperationType,
+  getRedirectResult
 } from './firebase';
 import { Section, CaseStudy, ProfileData, BrandingAsset, User } from './types';
 import Markdown from 'react-markdown';
@@ -67,6 +68,11 @@ export default function App() {
   const [opportunities, setOpportunities] = useState<string>('');
 
   useEffect(() => {
+    // Handle redirect result
+    getRedirectResult(auth).catch((error) => {
+      console.error("Redirect login error:", error);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       setIsAuthReady(true);
@@ -127,7 +133,7 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithRedirect(auth, googleProvider);
     } catch (error) {
       console.error(error);
     }
