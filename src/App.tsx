@@ -35,10 +35,9 @@ import {
 import { 
   auth, 
   googleProvider, 
-  signInWithRedirect, 
+  signInWithPopup, 
   signOut, 
   onAuthStateChanged, 
-  getRedirectResult,
   dataconnect
 } from './firebase';
 import { Section, CaseStudy, ProfileData, BrandingAsset, User } from './types';
@@ -58,11 +57,6 @@ export default function App() {
   const [opportunities, setOpportunities] = useState<string>('');
 
   useEffect(() => {
-    // Handle redirect result
-    getRedirectResult(auth).catch((error) => {
-      console.error("Redirect login error:", error);
-    });
-
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       setIsAuthReady(true);
@@ -83,7 +77,7 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
-      await signInWithRedirect(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error(error);
     }

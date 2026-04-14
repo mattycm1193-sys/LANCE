@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut, onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getDataConnect, connectDataConnectEmulator } from 'firebase/data-connect';
 
 const firebaseConfig = {
@@ -35,5 +35,5 @@ export enum OperationType {
   WRITE = 'write',
 }
 
-export { signInWithRedirect, signOut, onAuthStateChanged, getRedirectResult };
+export { signInWithPopup, signOut, onAuthStateChanged };
 export type { User };
