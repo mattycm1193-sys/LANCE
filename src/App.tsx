@@ -34,22 +34,12 @@ import {
 } from './services/gemini';
 import { 
   auth, 
-  db, 
   googleProvider, 
   signInWithRedirect, 
   signOut, 
   onAuthStateChanged, 
-  collection, 
-  doc, 
-  setDoc, 
-  onSnapshot, 
-  query, 
-  where, 
-  orderBy,
-  getDocFromServer,
-  handleFirestoreError,
-  OperationType,
-  getRedirectResult
+  getRedirectResult,
+  dataconnect
 } from './firebase';
 import { Section, CaseStudy, ProfileData, BrandingAsset, User } from './types';
 import Markdown from 'react-markdown';
@@ -76,31 +66,11 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       setIsAuthReady(true);
-      
-      if (u) {
-        // Sync user to Firestore
-        const userRef = doc(db, 'users', u.uid);
-        try {
-          const userDoc = await getDocFromServer(userRef);
-          if (!userDoc.exists()) {
-            await setDoc(userRef, {
-              uid: u.uid,
-              email: u.email,
-              displayName: u.displayName,
-              photoURL: u.photoURL,
-              role: 'user',
-              createdAt: Date.now()
-            });
-          }
-        } catch (e) {
-          console.error("Error syncing user:", e);
-        }
-      }
     });
     return () => unsubscribe();
   }, []);
 
-  // Firestore Sync
+  // Data Connect Sync (Placeholder for actual Data Connect logic)
   useEffect(() => {
     if (!user) {
       setCaseStudies([]);
@@ -108,27 +78,7 @@ export default function App() {
       setBrandingAssets([]);
       return;
     }
-
-    const qCaseStudies = query(collection(db, 'caseStudies'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const unsubCaseStudies = onSnapshot(qCaseStudies, (snapshot) => {
-      setCaseStudies(snapshot.docs.map(doc => doc.data() as CaseStudy));
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'caseStudies'));
-
-    const qProfiles = query(collection(db, 'profiles'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const unsubProfiles = onSnapshot(qProfiles, (snapshot) => {
-      if (!snapshot.empty) setProfileData(snapshot.docs[0].data() as ProfileData);
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'profiles'));
-
-    const qAssets = query(collection(db, 'brandingAssets'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const unsubAssets = onSnapshot(qAssets, (snapshot) => {
-      setBrandingAssets(snapshot.docs.map(doc => doc.data() as BrandingAsset));
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'brandingAssets'));
-
-    return () => {
-      unsubCaseStudies();
-      unsubProfiles();
-      unsubAssets();
-    };
+    // TODO: Implement Data Connect queries here when SDK is generated
   }, [user]);
 
   const handleLogin = async () => {
@@ -268,8 +218,8 @@ export default function App() {
             >
               {activeSection === 'dashboard' && <DashboardView setActiveSection={setActiveSection} />}
               {activeSection === 'portfolio' && <PortfolioView user={user} caseStudies={caseStudies} />}
-              {activeSection === 'profile' && <ProfileView user={user} profileData={profileData} />}
-              {activeSection === 'branding' && <BrandingView user={user} assets={brandingAssets} />}
+              {activeSection === 'profile' && <ProfileView user={user} profileData={profileData} setProfileData={setProfileData} />}
+              {activeSection === 'branding' && <BrandingView user={user} assets={brandingAssets} setBrandingAssets={setBrandingAssets} />}
               {activeSection === 'opportunities' && <OpportunitiesView />}
               {activeSection === 'chat' && <Chatbot />}
               {activeSection === 'voice' && <VoiceAgent />}
@@ -375,13 +325,10 @@ function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStu
       const cleaned = result.replace(/```json|```/g, '').trim();
       const data = JSON.parse(cleaned);
       
-      const studyId = doc(collection(db, 'caseStudies')).id;
-      await setDoc(doc(db, 'caseStudies', studyId), {
-        ...data,
-        id: studyId,
-        userId: user.uid,
-        createdAt: Date.now()
-      });
+      // Data Connect: Implement save logic here
+      // For now, we'll just update the local state if possible, 
+      // but since caseStudies is passed as a prop, we'll just log it.
+      console.log("Generated Case Study:", data);
       
       setInput('');
     } catch (e) {
@@ -461,7 +408,7 @@ function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStu
   );
 }
 
-function ProfileView({ user, profileData }: { user: User, profileData: ProfileData | null }) {
+function ProfileView({ user, profileData, setProfileData }: { user: User, profileData: ProfileData | null, setProfileData: (p: ProfileData) => void }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [platform, setPlatform] = useState('Upwork');
   const [skills, setSkills] = useState('');
@@ -478,10 +425,10 @@ function ProfileView({ user, profileData }: { user: User, profileData: ProfileDa
       const cleaned = result.replace(/```json|```/g, '').trim();
       const data = JSON.parse(cleaned);
       
-      const profileId = doc(collection(db, 'profiles')).id;
-      await setDoc(doc(db, 'profiles', profileId), {
+      // Data Connect: Implement save logic here
+      setProfileData({
         ...data,
-        id: profileId,
+        id: Date.now().toString(),
         userId: user.uid,
         createdAt: Date.now()
       });
@@ -594,7 +541,7 @@ function ProfileView({ user, profileData }: { user: User, profileData: ProfileDa
   );
 }
 
-function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] }) {
+function BrandingView({ user, assets, setBrandingAssets }: { user: User, assets: BrandingAsset[], setBrandingAssets: React.Dispatch<React.SetStateAction<BrandingAsset[]>> }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [type, setType] = useState<'banner' | 'profile-pic' | 'video' | 'social-post'>('banner');
@@ -661,16 +608,17 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
           : await generateImage(prompt, type === 'banner' ? '16:9' : aspectRatio);
       }
 
-      const assetId = doc(collection(db, 'brandingAssets')).id;
-      await setDoc(doc(db, 'brandingAssets', assetId), {
-        id: assetId,
+      // Data Connect: Implement save logic here
+      const newAsset: BrandingAsset = {
+        id: Date.now().toString(),
         userId: user.uid,
         type,
         url,
         prompt: prompt || "Generated from photo",
         caption: caption || undefined,
         createdAt: Date.now()
-      });
+      };
+      setBrandingAssets(prev => [newAsset, ...prev]);
       setPrompt('');
       setUploadedFile(null);
     } catch (e) {
@@ -695,15 +643,16 @@ function BrandingView({ user, assets }: { user: User, assets: BrandingAsset[] })
 
       const url = await editImage(editPrompt, base64, blob.type);
       
-      const assetId = doc(collection(db, 'brandingAssets')).id;
-      await setDoc(doc(db, 'brandingAssets', assetId), {
-        id: assetId,
+      // Data Connect: Implement save logic here
+      const newAsset: BrandingAsset = {
+        id: Date.now().toString(),
         userId: user.uid,
         type: editingAsset.type,
         url,
         prompt: `Edit of ${editingAsset.prompt}: ${editPrompt}`,
         createdAt: Date.now()
-      });
+      };
+      setBrandingAssets(prev => [newAsset, ...prev]);
       
       setEditingAsset(null);
       setEditPrompt('');
