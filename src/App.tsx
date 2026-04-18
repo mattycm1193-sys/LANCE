@@ -360,8 +360,10 @@ function PortfolioView({ user, caseStudies, handleError, addToast }: { user: Use
           <button 
             onClick={() => setUseHighThinking(!useHighThinking)}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border font-sans",
-              useHighThinking ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border font-sans",
+              useHighThinking 
+                ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text hover:shadow-[inset_0_4px_8px_rgba(0,0,0,0.8),0_0_15px_rgba(6,182,212,0.2)]" 
+                : "bg-white/5 border-white/10 text-gray-500 hover:bg-white/10 hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] active:scale-95"
             )}
           >
             <BrainCircuit className="w-4 h-4" />
@@ -373,12 +375,12 @@ function PortfolioView({ user, caseStudies, handleError, addToast }: { user: Use
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Describe a project you worked on (e.g., 'Built a SaaS dashboard for a fintech startup that reduced churn by 15%')"
-            className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm focus:ring-2 focus:ring-cyan-500 outline-none min-h-[120px] transition-all"
+            className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 outline-none min-h-[120px] transition-all duration-300"
           />
           <button
             onClick={handleGenerate}
             disabled={isGenerating || !input}
-            className="w-full bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
+            className="w-full bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 hover:shadow-[0_0_30px_rgba(6,182,212,0.4),inset_0_2px_4px_rgba(0,0,0,0.2)] disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-500 text-white chiseled-text"
           >
             {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
             Generate Case Study
@@ -388,7 +390,7 @@ function PortfolioView({ user, caseStudies, handleError, addToast }: { user: Use
 
       <div className="grid grid-cols-1 gap-6">
         {caseStudies.map((study) => (
-          <div key={study.id} className="bg-[#141414] p-8 rounded-2xl border border-white/5 hover:border-cyan-500/30 transition-all group">
+          <div key={study.id} className="bg-[#141414] p-8 rounded-2xl border border-white/5 hover:border-cyan-500/40 hover:shadow-[0_0_40px_-10px_rgba(6,182,212,0.3)] transition-all duration-500 group">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h4 className="text-2xl font-serif font-extrabold text-white group-hover:text-cyan-400 transition-colors">{study.title}</h4>
@@ -464,7 +466,7 @@ function ProfileView({ user, profileData, setProfileData, handleError, addToast 
             <select 
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
-              className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+              className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 transition-all duration-300"
             >
               <option>Upwork</option>
               <option>Fiverr</option>
@@ -479,7 +481,7 @@ function ProfileView({ user, profileData, setProfileData, handleError, addToast 
               value={skills}
               onChange={(e) => setSkills(e.target.value)}
               placeholder="e.g. React, UI Design, Copywriting"
-              className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+              className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 transition-all duration-300"
             />
           </div>
         </div>
@@ -487,7 +489,7 @@ function ProfileView({ user, profileData, setProfileData, handleError, addToast 
           <button
             onClick={handleGenerate}
             disabled={isGenerating || !skills}
-            className="flex-1 bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
+            className="flex-1 bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 hover:shadow-[0_0_30px_rgba(6,182,212,0.4),inset_0_2px_4px_rgba(0,0,0,0.2)] disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-500 text-white chiseled-text"
           >
             {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserCircle className="w-5 h-5" />}
             Curate Profile
@@ -714,7 +716,7 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
                   <button 
                     onClick={handleEdit}
                     disabled={isGenerating || !editPrompt}
-                    className="flex-1 bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
+                    className="flex-1 bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 hover:shadow-[0_0_30px_rgba(6,182,212,0.4),inset_0_2px_4px_rgba(0,0,0,0.2)] disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 text-white chiseled-text"
                   >
                     {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
                     Apply Edit
@@ -739,8 +741,10 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
               key={t.id}
               onClick={() => setType(t.id as any)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all border",
-                type === t.id ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-white chiseled-text" : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+                "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 border",
+                type === t.id 
+                  ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-white chiseled-text hover:shadow-[inset_0_4px_8px_rgba(0,0,0,0.8),0_0_15px_rgba(6,182,212,0.3)]" 
+                  : "bg-white/5 border-white/10 text-gray-400 hover:bg-cyan-500 hover:text-black hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]"
               )}
             >
               <t.icon className="w-4 h-4" />
@@ -759,8 +763,10 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
                     key={ar}
                     onClick={() => setAspectRatio(ar)}
                     className={cn(
-                      "px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all",
-                      aspectRatio === ar ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                      "px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all duration-300",
+                      aspectRatio === ar 
+                        ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" 
+                        : "bg-white/5 border-white/10 text-gray-500 hover:bg-white/10 hover:shadow-[inset_0_3px_6px_rgba(0,0,0,0.5)] active:scale-95"
                     )}
                   >
                     {ar}
@@ -777,8 +783,10 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
                       key={q}
                       onClick={() => setImageQuality(q as any)}
                       className={cn(
-                        "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
-                        imageQuality === q ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                        "px-4 py-2 rounded-lg text-xs font-bold border transition-all duration-300",
+                        imageQuality === q 
+                          ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" 
+                          : "bg-white/5 border-white/10 text-gray-500 hover:bg-white/10 hover:shadow-[inset_0_3px_6px_rgba(0,0,0,0.5)] active:scale-95"
                       )}
                     >
                       {q}
@@ -792,8 +800,10 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
                         key={size}
                         onClick={() => setImageSize(size as any)}
                         className={cn(
-                          "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
-                          imageSize === size ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                          "px-4 py-2 rounded-lg text-xs font-bold border transition-all duration-300",
+                          imageSize === size 
+                            ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" 
+                            : "bg-white/5 border-white/10 text-gray-500 hover:bg-white/10 hover:shadow-[inset_0_3px_6px_rgba(0,0,0,0.5)] active:scale-95"
                         )}
                       >
                         {size}
@@ -816,8 +826,10 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
                     key={dim}
                     onClick={() => setPostDimension(dim as any)}
                     className={cn(
-                      "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
-                      postDimension === dim ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                      "px-4 py-2 rounded-lg text-xs font-bold border transition-all duration-300",
+                      postDimension === dim 
+                        ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" 
+                        : "bg-white/5 border-white/10 text-gray-500 hover:bg-white/10 hover:shadow-[inset_0_3px_6px_rgba(0,0,0,0.5)] active:scale-95"
                     )}
                   >
                     {dim}
@@ -833,8 +845,10 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
                     key={q}
                     onClick={() => setImageQuality(q as any)}
                     className={cn(
-                      "px-4 py-2 rounded-lg text-xs font-bold border transition-all",
-                      imageQuality === q ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" : "bg-white/5 border-white/10 text-gray-500"
+                      "px-4 py-2 rounded-lg text-xs font-bold border transition-all duration-300",
+                      imageQuality === q 
+                        ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" 
+                        : "bg-white/5 border-white/10 text-gray-500 hover:bg-white/10 hover:shadow-[inset_0_3px_6px_rgba(0,0,0,0.5)] active:scale-95"
                     )}
                   >
                     {q}
@@ -847,7 +861,7 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
               <select 
                 value={contentFocus}
                 onChange={(e) => setContentFocus(e.target.value as any)}
-                className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 transition-all duration-300"
               >
                 <option>Educational</option>
                 <option>Promotional</option>
@@ -877,8 +891,10 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
 
         {(type === 'video' || type === 'social-post') && (
           <div {...getRootProps()} className={cn(
-            "mb-6 border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer",
-            isDragActive ? "border-cyan-500 bg-cyan-500/5" : "border-white/10 hover:border-white/20 bg-black/20"
+            "mb-6 border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-500 cursor-pointer",
+            isDragActive 
+              ? "border-cyan-500 bg-cyan-500/5 shadow-[0_0_30px_rgba(6,182,212,0.15),inset_0_0_20px_rgba(6,182,212,0.05)]" 
+              : "border-white/10 hover:border-cyan-500/40 hover:bg-cyan-500/[0.02] hover:shadow-[0_0_25px_-5px_rgba(6,182,212,0.2)] bg-black/20"
           )}>
             <input {...getInputProps()} />
             <div className="flex flex-col items-center gap-3">
@@ -905,12 +921,12 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={type === 'video' ? "Describe the animation (optional)" : "Describe your style (e.g. 'Minimalist Tech', 'Vibrant Creative')"}
-            className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 transition-all duration-300"
           />
           <button
             onClick={handleGenerate}
             disabled={isGenerating || (!prompt && !uploadedFile)}
-            className="w-full bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text"
+            className="w-full bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 hover:shadow-[0_0_30px_rgba(6,182,212,0.4),inset_0_2px_4px_rgba(0,0,0,0.2)] disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-500 text-white chiseled-text"
           >
             {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Palette className="w-5 h-5" />}
             {type === 'video' ? 'Generate Video' : 'Generate Asset'}
@@ -920,7 +936,10 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {assets.map((asset) => (
-          <div key={asset.id} className="bg-[#141414] rounded-3xl overflow-hidden border border-white/5 group">
+          <div 
+            key={asset.id} 
+            className="bg-[#141414] rounded-3xl overflow-hidden border border-white/5 transition-all duration-500 hover:border-cyan-500/40 hover:shadow-[0_0_40px_-10px_rgba(6,182,212,0.3)] group"
+          >
             <div className={cn("relative overflow-hidden", asset.type === 'banner' ? "aspect-video" : asset.type === 'social-post' ? "aspect-[4/5]" : "aspect-square")}>
               {asset.type === 'video' || (asset.type === 'social-post' && asset.url.includes('.mp4')) ? (
                 <video src={asset.url} controls className="w-full h-full object-cover" />
@@ -935,12 +954,12 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                 <button 
                   onClick={() => setEditingAsset(asset)}
-                  className="p-3 bg-white text-black rounded-full hover:scale-110 transition-transform"
+                  className="p-3 bg-white text-black rounded-full hover:bg-cyan-500 hover:text-white hover:scale-110 transition-all duration-300 shadow-xl"
                   title="Edit Image"
                 >
                   <Palette className="w-5 h-5" />
                 </button>
-                <button className="p-3 bg-white text-black rounded-full hover:scale-110 transition-transform">
+                <button className="p-3 bg-white text-black rounded-full hover:bg-cyan-500 hover:text-white hover:scale-110 transition-all duration-300 shadow-xl">
                   <Download className="w-5 h-5" />
                 </button>
               </div>
@@ -1001,12 +1020,12 @@ function OpportunitiesView({ handleError }: { handleError: (e: any) => void }) {
             value={niche}
             onChange={(e) => setNiche(e.target.value)}
             placeholder="Enter your niche (e.g. 'AI Automation', 'Web3 Development')"
-            className="flex-1 bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+            className="flex-1 bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 transition-all duration-300"
           />
           <button
             onClick={handleSearch}
             disabled={isGenerating || !niche}
-            className="bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 disabled:opacity-50 px-8 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-white chiseled-text min-w-[140px]"
+            className="bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 hover:shadow-[0_0_30px_rgba(6,182,212,0.4),inset_0_2px_4px_rgba(0,0,0,0.2)] disabled:opacity-50 px-8 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-500 text-white chiseled-text min-w-[140px]"
           >
             {isGenerating ? (
               <>
@@ -1031,7 +1050,7 @@ function OpportunitiesView({ handleError }: { handleError: (e: any) => void }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="bg-[#141414] p-6 rounded-3xl border border-white/5 hover:border-cyan-500/30 transition-all group relative overflow-hidden"
+              className="bg-[#141414] p-6 rounded-3xl border border-white/5 hover:border-cyan-500/40 hover:shadow-[0_0_40px_-10px_rgba(6,182,212,0.3)] transition-all duration-500 group relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 p-4">
                 <div className="px-2 py-1 bg-cyan-500/10 text-cyan-400 rounded text-[10px] font-bold uppercase tracking-wider border border-cyan-500/20">
