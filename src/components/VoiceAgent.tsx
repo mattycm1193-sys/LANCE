@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { startLiveSession } from '../services/gemini';
 import { cn } from '../lib/utils';
 
-export function VoiceAgent() {
+export function VoiceAgent({ handleError }: { handleError: (e: any) => void }) {
   const [isActive, setIsActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -99,8 +99,7 @@ export function VoiceAgent() {
       
       setIsActive(true);
     } catch (error) {
-      console.error(error);
-      alert("Failed to connect to voice agent. Please check your microphone permissions.");
+      handleError(error);
     } finally {
       setIsConnecting(false);
     }

@@ -6,7 +6,7 @@ import { ChatMessage } from '../types';
 import Markdown from 'react-markdown';
 import { cn } from '../lib/utils';
 
-export function Chatbot() {
+export function Chatbot({ handleError }: { handleError: (e: any) => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +45,7 @@ export function Chatbot() {
       const modelMessage: ChatMessage = { role: 'model', text: result.text, timestamp: Date.now() };
       setMessages(prev => [...prev, modelMessage]);
     } catch (error) {
-      console.error(error);
+      handleError(error);
       setMessages(prev => [...prev, { role: 'model', text: "Sorry, I encountered an error. Please try again.", timestamp: Date.now() }]);
     } finally {
       setIsLoading(false);

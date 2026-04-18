@@ -44,11 +44,29 @@ import { Section, CaseStudy, ProfileData, BrandingAsset, User } from './types';
 import Markdown from 'react-markdown';
 import { Chatbot } from './components/Chatbot';
 import { VoiceAgent } from './components/VoiceAgent';
+import { ToastContainer, ToastProps } from './components/Toast';
+import { parseError } from './lib/error-handler';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [toasts, setToasts] = useState<ToastProps[]>([]);
+  
+  const addToast = (title: string, message: string, type: ToastProps['type'] = 'error') => {
+    const id = uuidv4();
+    setToasts(prev => [...prev, { id, title, message, type, onClose: removeToast }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const handleError = (error: any) => {
+    const parsed = parseError(error);
+    addToast(parsed.title, parsed.message, parsed.type);
+  };
   
   // State for different features
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
@@ -78,16 +96,18 @@ export default function App() {
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
+      addToast('Welcome back!', 'Successfully signed in with Google.', 'success');
     } catch (error) {
-      console.error(error);
+      handleError(error);
     }
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      addToast('Signed out', 'You have been successfully signed out.', 'info');
     } catch (error) {
-      console.error(error);
+      handleError(error);
     }
   };
 
@@ -211,15 +231,16 @@ export default function App() {
               transition={{ duration: 0.2 }}
             >
               {activeSection === 'dashboard' && <DashboardView setActiveSection={setActiveSection} />}
-              {activeSection === 'portfolio' && <PortfolioView user={user} caseStudies={caseStudies} />}
-              {activeSection === 'profile' && <ProfileView user={user} profileData={profileData} setProfileData={setProfileData} />}
-              {activeSection === 'branding' && <BrandingView user={user} assets={brandingAssets} setBrandingAssets={setBrandingAssets} />}
-              {activeSection === 'opportunities' && <OpportunitiesView />}
-              {activeSection === 'chat' && <Chatbot />}
-              {activeSection === 'voice' && <VoiceAgent />}
+              {activeSection === 'portfolio' && <PortfolioView user={user} caseStudies={caseStudies} handleError={handleError} addToast={addToast} />}
+              {activeSection === 'profile' && <ProfileView user={user} profileData={profileData} setProfileData={setProfileData} handleError={handleError} addToast={addToast} />}
+              {activeSection === 'branding' && <BrandingView user={user} assets={brandingAssets} setBrandingAssets={setBrandingAssets} handleError={handleError} addToast={addToast} />}
+              {activeSection === 'opportunities' && <OpportunitiesView handleError={handleError} />}
+              {activeSection === 'chat' && <Chatbot handleError={handleError} />}
+              {activeSection === 'voice' && <VoiceAgent handleError={handleError} />}
             </motion.div>
           </AnimatePresence>
         </div>
+        <ToastContainer toasts={toasts} onClose={removeToast} />
       </main>
     </div>
   );
@@ -299,7 +320,7 @@ function DashboardView({ setActiveSection }: { setActiveSection: (s: Section) =>
   );
 }
 
-function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStudy[] }) {
+function PortfolioView({ user, caseStudies, handleError, addToast }: { user: User, caseStudies: CaseStudy[], handleError: (e: any) => void, addToast: (t: string, m: string, ty?: ToastProps['type']) => void }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [input, setInput] = useState('');
   const [useHighThinking, setUseHighThinking] = useState(false);
@@ -320,13 +341,12 @@ function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStu
       const data = JSON.parse(cleaned);
       
       // Data Connect: Implement save logic here
-      // For now, we'll just update the local state if possible, 
-      // but since caseStudies is passed as a prop, we'll just log it.
       console.log("Generated Case Study:", data);
+      addToast('Case Study Generated', 'Your new case study is ready to review.', 'success');
       
       setInput('');
     } catch (e) {
-      console.error(e);
+      handleError(e);
     } finally {
       setIsGenerating(false);
     }
@@ -402,7 +422,7 @@ function PortfolioView({ user, caseStudies }: { user: User, caseStudies: CaseStu
   );
 }
 
-function ProfileView({ user, profileData, setProfileData }: { user: User, profileData: ProfileData | null, setProfileData: (p: ProfileData) => void }) {
+function ProfileView({ user, profileData, setProfileData, handleError, addToast }: { user: User, profileData: ProfileData | null, setProfileData: (p: ProfileData) => void, handleError: (e: any) => void, addToast: (t: string, m: string, ty?: ToastProps['type']) => void }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [platform, setPlatform] = useState('Upwork');
   const [skills, setSkills] = useState('');
@@ -426,8 +446,9 @@ function ProfileView({ user, profileData, setProfileData }: { user: User, profil
         userId: user.uid,
         createdAt: Date.now()
       });
+      addToast('Profile Optimized', `Your ${platform} profile has been updated.`, 'success');
     } catch (e) {
-      console.error(e);
+      handleError(e);
     } finally {
       setIsGenerating(false);
     }
@@ -535,7 +556,7 @@ function ProfileView({ user, profileData, setProfileData }: { user: User, profil
   );
 }
 
-function BrandingView({ user, assets, setBrandingAssets }: { user: User, assets: BrandingAsset[], setBrandingAssets: React.Dispatch<React.SetStateAction<BrandingAsset[]>> }) {
+function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }: { user: User, assets: BrandingAsset[], setBrandingAssets: React.Dispatch<React.SetStateAction<BrandingAsset[]>>, handleError: (e: any) => void, addToast: (t: string, m: string, ty?: ToastProps['type']) => void }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [type, setType] = useState<'banner' | 'profile-pic' | 'video' | 'social-post'>('banner');
@@ -613,10 +634,11 @@ function BrandingView({ user, assets, setBrandingAssets }: { user: User, assets:
         createdAt: Date.now()
       };
       setBrandingAssets(prev => [newAsset, ...prev]);
+      addToast('Asset Created', `Your ${type} has been generated successfully.`, 'success');
       setPrompt('');
       setUploadedFile(null);
     } catch (e) {
-      console.error(e);
+      handleError(e);
     } finally {
       setIsGenerating(false);
     }
@@ -647,11 +669,12 @@ function BrandingView({ user, assets, setBrandingAssets }: { user: User, assets:
         createdAt: Date.now()
       };
       setBrandingAssets(prev => [newAsset, ...prev]);
+      addToast('Asset Updated', 'Image edit completed successfully.', 'success');
       
       setEditingAsset(null);
       setEditPrompt('');
     } catch (e) {
-      console.error(e);
+      handleError(e);
     } finally {
       setIsGenerating(false);
     }
@@ -938,7 +961,7 @@ function BrandingView({ user, assets, setBrandingAssets }: { user: User, assets:
   );
 }
 
-function OpportunitiesView() {
+function OpportunitiesView({ handleError }: { handleError: (e: any) => void }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [niche, setNiche] = useState('');
   const [results, setResults] = useState<any[]>([]);
@@ -955,12 +978,12 @@ function OpportunitiesView() {
         body: JSON.stringify({ query: niche }),
       });
       
-      if (!response.ok) throw new Error('Failed to fetch opportunities');
+      if (!response.ok) throw response;
       
       const data = await response.json();
       setResults(data.opportunities || []);
     } catch (e) {
-      console.error(e);
+      handleError(e);
     } finally {
       setIsGenerating(false);
     }
