@@ -18,7 +18,8 @@ import {
   BrainCircuit,
   Video,
   Image as ImageIcon,
-  Upload
+  Upload,
+  Droplet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDropzone } from 'react-dropzone';
@@ -30,7 +31,8 @@ import {
   generateImage,
   editImage, 
   animateImageToVideo, 
-  findOpportunities 
+  findOpportunities,
+  generatePalette
 } from './services/gemini';
 import { 
   auth, 
@@ -561,7 +563,8 @@ function ProfileView({ user, profileData, setProfileData, handleError, addToast 
 function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }: { user: User, assets: BrandingAsset[], setBrandingAssets: React.Dispatch<React.SetStateAction<BrandingAsset[]>>, handleError: (e: any) => void, addToast: (t: string, m: string, ty?: ToastProps['type']) => void }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [type, setType] = useState<'banner' | 'profile-pic' | 'video' | 'social-post'>('banner');
+  const [type, setType] = useState<'banner' | 'profile-pic' | 'video' | 'social-post' | 'palette'>('banner');
+  const [activePaletteId, setActivePaletteId] = useState<string | null>(null);
   const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
   const [aspectRatio, setAspectRatio] = useState<string>('1:1');
   const [imageQuality, setImageQuality] = useState<'Standard' | 'Studio'>('Standard');
@@ -569,6 +572,12 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
   const [contentFocus, setContentFocus] = useState<'Educational' | 'Promotional' | 'Personal'>('Educational');
   const [includeVoiceover, setIncludeVoiceover] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [projectName, setProjectName] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterProject, setFilterProject] = useState<string>('all');
 
   const onDrop = (acceptedFiles: File[]) => {
     setUploadedFile(acceptedFiles[0]);
@@ -590,6 +599,54 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
       let url = '';
       let caption = '';
       
+      let finalPrompt = prompt;
+      if (activePaletteId && type !== 'palette') {
+        const activePalette = assets.find(a => a.id === activePaletteId);
+        if (activePalette && activePalette.colors) {
+          finalPrompt += `. Use this exact color palette for styling and background: ${activePalette.colors.map(c => `${c.name} (${c.hex})`).join(', ')}. Do not use other colors.`;
+        }
+      }
+
+      if (type === 'palette') {
+        let base64: string | undefined;
+        let mimeType: string | undefined;
+        
+        if (uploadedFile) {
+          mimeType = uploadedFile.type;
+          const reader = new FileReader();
+          base64 = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(uploadedFile);
+          });
+        }
+        
+        const responseText = await generatePalette(finalPrompt || "A vibrant and professional color palette.", base64, mimeType);
+        const startIdx = responseText.indexOf('{');
+        const endIdx = responseText.lastIndexOf('}');
+        if (startIdx === -1 || endIdx === -1) throw new Error("Could not parse palette JSON");
+        
+        const paletteData = JSON.parse(responseText.substring(startIdx, endIdx + 1));
+        
+        const newAsset: BrandingAsset = {
+          id: Date.now().toString(),
+          userId: user.uid,
+          type: 'palette',
+          prompt: prompt || (uploadedFile ? "Generated from photo" : "Custom Color Palette"),
+          colors: paletteData.palette,
+          tips: paletteData.tips,
+          projectName: projectName.trim() || undefined,
+          tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
+          createdAt: Date.now()
+        };
+        
+        setBrandingAssets(prev => [newAsset, ...prev]);
+        addToast('Palette Created', `Your color palette has been generated in your assets.`, 'success');
+        setPrompt('');
+        setUploadedFile(null);
+        setIsGenerating(false);
+        return;
+      }
+
       if (type === 'social-post') {
         const captionPrompt = `Generate a high-conversion social media caption for a ${contentFocus} post. 
         Topic: ${prompt}. 
@@ -604,12 +661,12 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
             reader.onload = () => resolve(reader.result as string);
             reader.readAsDataURL(uploadedFile);
           });
-          url = await animateImageToVideo(base64, uploadedFile.type, `Create a professional ${contentFocus} video post about: ${prompt}`);
+          url = await animateImageToVideo(base64, uploadedFile.type, `Create a professional ${contentFocus} video post about: ${finalPrompt}`);
         } else {
           const ar = postDimension === 'Square' ? '1:1' : postDimension === 'Portrait' ? '4:5' : '16:9';
           url = imageQuality === 'Studio' 
-            ? await generateHighQualityImage(`A professional ${contentFocus} social media post visual about: ${prompt}`, imageSize, ar)
-            : await generateImage(`A professional ${contentFocus} social media post visual about: ${prompt}`, ar);
+            ? await generateHighQualityImage(`A professional ${contentFocus} social media post visual about: ${finalPrompt}`, imageSize, ar)
+            : await generateImage(`A professional ${contentFocus} social media post visual about: ${finalPrompt}`, ar);
         }
       } else if (type === 'video') {
         if (!uploadedFile) throw new Error("Please upload a photo first");
@@ -618,11 +675,11 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
           reader.onload = () => resolve(reader.result as string);
           reader.readAsDataURL(uploadedFile);
         });
-        url = await animateImageToVideo(base64, uploadedFile.type, prompt || "Animate this photo professionally");
+        url = await animateImageToVideo(base64, uploadedFile.type, finalPrompt || "Animate this photo professionally");
       } else {
         url = imageQuality === 'Studio'
-          ? await generateHighQualityImage(prompt, imageSize, type === 'banner' ? '16:9' : aspectRatio)
-          : await generateImage(prompt, type === 'banner' ? '16:9' : aspectRatio);
+          ? await generateHighQualityImage(finalPrompt, imageSize, type === 'banner' ? '16:9' : aspectRatio)
+          : await generateImage(finalPrompt, type === 'banner' ? '16:9' : aspectRatio);
       }
 
       // Data Connect: Implement save logic here
@@ -633,6 +690,8 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
         url,
         prompt: prompt || "Generated from photo",
         caption: caption || undefined,
+        projectName: projectName.trim() || undefined,
+        tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
         createdAt: Date.now()
       };
       setBrandingAssets(prev => [newAsset, ...prev]);
@@ -661,6 +720,8 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
 
       const url = await editImage(editPrompt, base64, blob.type);
       
+      const updatedTags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
+      
       // Data Connect: Implement save logic here
       const newAsset: BrandingAsset = {
         id: Date.now().toString(),
@@ -668,6 +729,8 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
         type: editingAsset.type,
         url,
         prompt: `Edit of ${editingAsset.prompt}: ${editPrompt}`,
+        projectName: projectName.trim() || editingAsset.projectName,
+        tags: updatedTags.length > 0 ? updatedTags : editingAsset.tags,
         createdAt: Date.now()
       };
       setBrandingAssets(prev => [newAsset, ...prev]);
@@ -731,12 +794,13 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
       <div className="bg-[#141414] p-6 rounded-2xl border border-white/5">
         <h3 className="text-xl font-serif font-extrabold mb-4">Branding Studio</h3>
         <div className="flex flex-wrap gap-3 mb-6 font-sans">
-          {[
-            { id: 'banner', label: 'Banner', icon: ImageIcon },
-            { id: 'profile-pic', label: 'Profile Pic', icon: UserCircle },
-            { id: 'social-post', label: 'Social Post', icon: MessageSquare },
-            { id: 'video', label: 'Video (Veo)', icon: Video },
-          ].map((t) => (
+            {[
+              { id: 'banner', label: 'Banner', icon: ImageIcon },
+              { id: 'profile-pic', label: 'Profile Pic', icon: UserCircle },
+              { id: 'social-post', label: 'Social Post', icon: MessageSquare },
+              { id: 'video', label: 'Video (Veo)', icon: Video },
+              { id: 'palette', label: 'Color Palette', icon: Droplet },
+            ].map((t) => (
             <button 
               key={t.id}
               onClick={() => setType(t.id as any)}
@@ -753,7 +817,7 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
           ))}
         </div>
 
-        {type !== 'video' && type !== 'social-post' && (
+        {type !== 'video' && type !== 'social-post' && type !== 'palette' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 font-sans">
             <div>
               <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Aspect Ratio</label>
@@ -889,7 +953,7 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
           </div>
         )}
 
-        {(type === 'video' || type === 'social-post') && (
+        {(type === 'video' || type === 'social-post' || type === 'palette') && (
           <div {...getRootProps()} className={cn(
             "mb-6 border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-500 cursor-pointer",
             isDragActive 
@@ -907,7 +971,7 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
                 <>
                   <p className="text-sm font-medium">Drop a photo here or click to upload</p>
                   <p className="text-xs text-gray-500 text-balance">
-                    {type === 'video' ? 'Veo will animate this photo into a professional video' : 'Use this as the base for your social media post'}
+                    {type === 'video' ? 'Veo will animate this photo into a professional video' : type === 'palette' ? 'Upload an inspiration image to extract a color palette' : 'Use this as the base for your social media post'}
                   </p>
                 </>
               )}
@@ -915,12 +979,29 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
           </div>
         )}
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <input 
+            type="text"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            placeholder="Project Name (e.g. 'CyberLaunch 2026')"
+            className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 transition-all duration-300"
+          />
+          <input 
+            type="text"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="Tags (comma-separated, e.g. 'hero, dark, organic')"
+            className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 transition-all duration-300"
+          />
+        </div>
+
         <div className="space-y-4">
           <input 
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder={type === 'video' ? "Describe the animation (optional)" : "Describe your style (e.g. 'Minimalist Tech', 'Vibrant Creative')"}
+            placeholder={type === 'video' ? "Describe the animation (optional)" : type === 'palette' ? "Describe the mood (e.g., 'Cyberpunk Neon', 'Earthy Minimalist')" : "Describe your style (e.g. 'Minimalist Tech', 'Vibrant Creative')"}
             className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 transition-all duration-300"
           />
           <button
@@ -929,46 +1010,146 @@ function BrandingView({ user, assets, setBrandingAssets, handleError, addToast }
             className="w-full bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-cyan-500/20 hover:opacity-90 hover:shadow-[0_0_30px_rgba(6,182,212,0.4),inset_0_2px_4px_rgba(0,0,0,0.2)] disabled:opacity-50 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-500 text-white chiseled-text"
           >
             {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Palette className="w-5 h-5" />}
-            {type === 'video' ? 'Generate Video' : 'Generate Asset'}
+            {type === 'video' ? 'Generate Video' : type === 'palette' ? 'Generate Palette' : 'Generate Asset'}
           </button>
         </div>
       </div>
 
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-[#141414] p-4 rounded-2xl border border-white/5 font-sans">
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input 
+            type="text"
+            placeholder="Search assets by prompt, caption, or tags..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-cyan-500/50"
+          />
+        </div>
+        <div className="flex gap-4 w-full md:w-auto">
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="flex-1 md:w-40 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 text-white"
+          >
+            <option value="all">All Types</option>
+            <option value="banner">Banners</option>
+            <option value="profile-pic">Profile Pics</option>
+            <option value="social-post">Social Posts</option>
+            <option value="video">Videos</option>
+            <option value="palette">Palettes</option>
+          </select>
+          <select
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            className="flex-1 md:w-48 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-cyan-500/50 text-white"
+          >
+            <option value="all">All Projects</option>
+            {Array.from(new Set(assets.map(a => a.projectName).filter(Boolean))).map(proj => (
+              <option key={proj!} value={proj!}>{proj}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {assets.map((asset) => (
+        {assets.filter(asset => {
+          if (filterType !== 'all' && asset.type !== filterType) return false;
+          if (filterProject !== 'all' && asset.projectName !== filterProject) return false;
+          if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            const promptMatch = asset.prompt?.toLowerCase().includes(query);
+            const captionMatch = asset.caption?.toLowerCase().includes(query);
+            const tagMatch = asset.tags?.some(t => t.toLowerCase().includes(query));
+            const projectMatch = asset.projectName?.toLowerCase().includes(query);
+            if (!promptMatch && !captionMatch && !tagMatch && !projectMatch) return false;
+          }
+          return true;
+        }).map((asset) => (
           <div 
             key={asset.id} 
-            className="bg-[#141414] rounded-3xl overflow-hidden border border-white/5 transition-all duration-500 hover:border-cyan-500/40 hover:shadow-[0_0_40px_-10px_rgba(6,182,212,0.3)] group"
+            className="bg-[#141414] rounded-3xl overflow-hidden border border-white/5 transition-all duration-500 hover:border-cyan-500/40 hover:shadow-[0_0_40px_-10px_rgba(6,182,212,0.3)] group flex flex-col"
           >
-            <div className={cn("relative overflow-hidden", asset.type === 'banner' ? "aspect-video" : asset.type === 'social-post' ? "aspect-[4/5]" : "aspect-square")}>
-              {asset.type === 'video' || (asset.type === 'social-post' && asset.url.includes('.mp4')) ? (
-                <video src={asset.url} controls className="w-full h-full object-cover" />
-              ) : (
-                <img 
-                  src={asset.url} 
-                  alt={asset.prompt} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  referrerPolicy="no-referrer"
-                />
-              )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                <button 
-                  onClick={() => setEditingAsset(asset)}
-                  className="p-3 bg-white text-black rounded-full hover:bg-cyan-500 hover:text-white hover:scale-110 transition-all duration-300 shadow-xl"
-                  title="Edit Image"
+            {asset.type === 'palette' ? (
+              <div className="p-6 flex-1 flex flex-col">
+                <div className="flex gap-1 mb-4 h-24 rounded-xl overflow-hidden">
+                  {asset.colors?.map(color => (
+                    <div key={color.hex} className="flex-1 transition-transform hover:scale-110 cursor-pointer relative group/color" style={{ backgroundColor: color.hex }}>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover/color:opacity-100 bg-black/40 transition-opacity">
+                        <span className="text-white text-xs font-mono font-bold drop-shadow-md">{color.hex}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <h4 className="text-white font-bold mb-2">Palette Guidelines</h4>
+                <ul className="text-xs text-gray-400 space-y-2 mb-4 flex-1">
+                  {asset.tips?.map((tip, i) => (
+                    <li key={i} className="flex gap-2 items-start"><Sparkles className="w-3 h-3 text-cyan-500 shrink-0 mt-0.5" /> <span>{tip}</span></li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => setActivePaletteId(activePaletteId === asset.id ? null : asset.id)}
+                  className={cn("w-full py-3 rounded-xl font-bold text-sm transition-all duration-300 border flex items-center justify-center gap-2", 
+                    activePaletteId === asset.id 
+                      ? "bg-[radial-gradient(circle_at_center,_#0e7490_0%,_#083344_100%)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border-cyan-500/50 text-cyan-400 chiseled-text" 
+                      : "bg-white/5 border-white/10 text-white hover:bg-white/10 hover:shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+                  )}
                 >
-                  <Palette className="w-5 h-5" />
-                </button>
-                <button className="p-3 bg-white text-black rounded-full hover:bg-cyan-500 hover:text-white hover:scale-110 transition-all duration-300 shadow-xl">
-                  <Download className="w-5 h-5" />
+                  <Droplet className="w-4 h-4" />
+                  {activePaletteId === asset.id ? "Active Palette" : "Set as Active Palette"}
                 </button>
               </div>
-            </div>
-            <div className="p-4">
-              <p className="text-xs font-bold text-cyan-400 uppercase mb-1">{asset.type.replace('-', ' ')}</p>
+            ) : (
+              <div className={cn("relative overflow-hidden", asset.type === 'banner' ? "aspect-video" : asset.type === 'social-post' ? "aspect-[4/5]" : "aspect-square")}>
+                {asset.type === 'video' || (asset.type === 'social-post' && asset.url?.includes('.mp4')) ? (
+                  <video src={asset.url} controls className="w-full h-full object-cover" />
+                ) : (
+                  <img 
+                    src={asset.url} 
+                    alt={asset.prompt} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                  <button 
+                    onClick={() => setEditingAsset(asset)}
+                    className="p-3 bg-white text-black rounded-full hover:bg-cyan-500 hover:text-white hover:scale-110 transition-all duration-300 shadow-xl"
+                    title="Edit Image"
+                  >
+                    <Palette className="w-5 h-5" />
+                  </button>
+                  <button className="p-3 bg-white text-black rounded-full hover:bg-cyan-500 hover:text-white hover:scale-110 transition-all duration-300 shadow-xl">
+                    <Download className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+            <div className="p-4 border-t border-white/5 bg-black/20">
+              <div className="flex justify-between items-start mb-1">
+                <p className="text-xs font-bold text-cyan-400 uppercase">{asset.type.replace('-', ' ')}</p>
+                {asset.projectName && (
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    {asset.projectName}
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-gray-400 truncate mb-2">{asset.prompt}</p>
+              
+              {asset.tags && asset.tags.length > 0 && (
+                <div className="flex gap-2 flex-wrap mb-3">
+                  {asset.tags.map((tag, i) => (
+                    <span key={i} className="text-[10px] text-gray-400 px-2 py-1 rounded bg-black/40 border border-white/10 uppercase tracking-wide">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {asset.caption && (
-                <div className="bg-black/20 p-3 rounded-lg border border-white/5">
+                <div className="bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] p-3 rounded-lg border border-white/5">
                   <p className="text-xs text-gray-300 line-clamp-3 italic">"{asset.caption}"</p>
                 </div>
               )}

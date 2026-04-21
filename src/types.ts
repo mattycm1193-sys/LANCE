@@ -30,13 +30,23 @@ export interface ProfileData {
   createdAt: number;
 }
 
+export interface ColorInfo {
+  hex: string;
+  name: string;
+  usage: string;
+}
+
 export interface BrandingAsset {
   id: string;
   userId: string;
-  type: 'banner' | 'profile-pic' | 'social-post' | 'video';
-  url: string;
+  type: 'banner' | 'profile-pic' | 'social-post' | 'video' | 'palette';
+  url?: string;
   prompt: string;
   caption?: string;
+  colors?: ColorInfo[];
+  tips?: string[];
+  projectName?: string;
+  tags?: string[];
   createdAt: number;
 }
 

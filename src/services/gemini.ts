@@ -145,6 +145,35 @@ export const createChat = (systemInstruction: string, model: string = "gemini-3.
   });
 };
 
+export const generatePalette = async (prompt: string, base64Image?: string, mimeType?: string) => {
+  const parts: any[] = [{ text: `Generate a cohesive, professional 5-color palette based on the following context/image: ${prompt}. 
+  Return ONLY valid JSON format exactly like this, with no markdown formatting:
+  {
+    "palette": [
+      { "hex": "#HEXVAL", "name": "Color Name", "usage": "Backgrounds" }
+    ],
+    "tips": [
+      "Tip 1 for using this palette",
+      "Tip 2 for using this palette"
+    ]
+  }` }];
+
+  if (base64Image && mimeType) {
+    parts.unshift({ inlineData: { data: base64Image.split(',')[1], mimeType } });
+  }
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.1-pro-preview",
+    contents: { parts },
+    config: {
+      temperature: 0.7,
+      responseMimeType: "application/json",
+    },
+  });
+
+  return response.text;
+};
+
 export const startLiveSession = async (systemInstruction: string, onAudioData: (data: string) => void) => {
   return ai.live.connect({
     model: "gemini-3.1-flash-live-preview", // Keeping live model for live session as lite might not support it
