@@ -1,4 +1,4 @@
-#Features:
+# Features:
 **## 🔐 1. Authentication & Security**
 Google Sign-In: Secure one-click authentication powered by Firebase.
 Custom Domain Support: Configured for Vercel deployment (e.g., lance.mcjs.ca).
@@ -32,7 +32,6 @@ Platform-Specific Generation: Generates optimized, high-conversion freelancer pr
 Cyber-Aesthetic Design: Modern, dark-themed UI featuring glassmorphism, cyan neon glows, pulse animations, and animated hover states.
 Toast Notifications: A sleek pop-up notification system to alert users of successes, validation errors, and system warnings.
 Drag-and-Drop Dropzones: Seamless file-upload handling for images and video generation tools across the platform."
-# Run and deploy your AI Studio app
 
 ## This contains *everything* you need to run LANCE locally:
 
