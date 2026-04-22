@@ -7,6 +7,14 @@ export interface User {
   photoURL: string | null;
 }
 
+export interface Comment {
+  id: string;
+  userId: string;
+  userName: string;
+  text: string;
+  timestamp: number;
+}
+
 export interface CaseStudy {
   id: string;
   userId: string;
@@ -16,6 +24,11 @@ export interface CaseStudy {
   solution: string;
   results: string;
   tags: string[];
+  externalLink?: string;
+  authorExplanation?: string;
+  views?: number;
+  clicks?: number;
+  comments?: Comment[];
   createdAt: number;
 }
 

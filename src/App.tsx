@@ -19,7 +19,11 @@ import {
   Video,
   Image as ImageIcon,
   Upload,
-  Droplet
+  Droplet,
+  ExternalLink,
+  Eye,
+  MousePointerClick,
+  Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDropzone } from 'react-dropzone';
@@ -42,7 +46,7 @@ import {
   onAuthStateChanged, 
   dataconnect
 } from './firebase';
-import { Section, CaseStudy, ProfileData, BrandingAsset, User } from './types';
+import { Section, CaseStudy, ProfileData, BrandingAsset, User, Comment as AppComment } from './types';
 import Markdown from 'react-markdown';
 import { Chatbot } from './components/Chatbot';
 import { VoiceAgent } from './components/VoiceAgent';
@@ -233,7 +237,7 @@ export default function App() {
               transition={{ duration: 0.2 }}
             >
               {activeSection === 'dashboard' && <DashboardView setActiveSection={setActiveSection} />}
-              {activeSection === 'portfolio' && <PortfolioView user={user} caseStudies={caseStudies} handleError={handleError} addToast={addToast} />}
+              {activeSection === 'portfolio' && <PortfolioView user={user} caseStudies={caseStudies} setCaseStudies={setCaseStudies} handleError={handleError} addToast={addToast} />}
               {activeSection === 'profile' && <ProfileView user={user} profileData={profileData} setProfileData={setProfileData} handleError={handleError} addToast={addToast} />}
               {activeSection === 'branding' && <BrandingView user={user} assets={brandingAssets} setBrandingAssets={setBrandingAssets} handleError={handleError} addToast={addToast} />}
               {activeSection === 'opportunities' && <OpportunitiesView handleError={handleError} />}
@@ -322,10 +326,47 @@ function DashboardView({ setActiveSection }: { setActiveSection: (s: Section) =>
   );
 }
 
-function PortfolioView({ user, caseStudies, handleError, addToast }: { user: User, caseStudies: CaseStudy[], handleError: (e: any) => void, addToast: (t: string, m: string, ty?: ToastProps['type']) => void }) {
+function PortfolioView({ user, caseStudies, setCaseStudies, handleError, addToast }: { user: User, caseStudies: CaseStudy[], setCaseStudies: React.Dispatch<React.SetStateAction<CaseStudy[]>>, handleError: (e: any) => void, addToast: (t: string, m: string, ty?: ToastProps['type']) => void }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [input, setInput] = useState('');
+  const [externalLink, setExternalLink] = useState('');
+  const [authorExplanation, setAuthorExplanation] = useState('');
   const [useHighThinking, setUseHighThinking] = useState(false);
+  const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
+
+  const handlePostComment = (studyId: string) => {
+    const rawText = commentInputs[studyId];
+    if (!rawText) return;
+    
+    const text = rawText.trim();
+    if (!text) {
+      addToast('Invalid Comment', 'Comment cannot be empty.', 'error');
+      return;
+    }
+    
+    if (text.length > 500) {
+      addToast('Invalid Comment', 'Comment exceeds maximum length of 500 characters.', 'error');
+      return;
+    }
+
+    const lowerText = text.toLowerCase();
+    const badWords = ['spam', 'viagra', 'buy now', 'crypto investment', 'sugar daddy'];
+    if (badWords.some(word => lowerText.includes(word))) {
+      addToast('Validation Failed', 'Comment contains inappropriate content.', 'error');
+      return;
+    }
+
+    const newComment: AppComment = {
+      id: Date.now().toString(),
+      userId: user.uid,
+      userName: user.displayName || 'Anonymous',
+      text: text,
+      timestamp: Date.now()
+    };
+    
+    setCaseStudies((prev: CaseStudy[]) => prev.map((s: CaseStudy) => s.id === studyId ? { ...s, comments: [...(s.comments || []), newComment] } : s));
+    setCommentInputs({ ...commentInputs, [studyId]: '' });
+  };
 
   const handleGenerate = async () => {
     if (!input) return;
@@ -342,11 +383,25 @@ function PortfolioView({ user, caseStudies, handleError, addToast }: { user: Use
       const cleaned = result.replace(/```json|```/g, '').trim();
       const data = JSON.parse(cleaned);
       
+      const newStudy: CaseStudy = {
+        id: Date.now().toString(),
+        userId: user.uid,
+        ...data,
+        externalLink: externalLink.trim() || undefined,
+        authorExplanation: authorExplanation.trim() || undefined,
+        views: Math.floor(Math.random() * 500), 
+        clicks: Math.floor(Math.random() * 100),
+        comments: [],
+        createdAt: Date.now()
+      };
+
       // Data Connect: Implement save logic here
-      console.log("Generated Case Study:", data);
+      setCaseStudies((prev: CaseStudy[]) => [newStudy, ...prev]);
       addToast('Case Study Generated', 'Your new case study is ready to review.', 'success');
       
       setInput('');
+      setExternalLink('');
+      setAuthorExplanation('');
     } catch (e) {
       handleError(e);
     } finally {
@@ -379,6 +434,22 @@ function PortfolioView({ user, caseStudies, handleError, addToast }: { user: Use
             placeholder="Describe a project you worked on (e.g., 'Built a SaaS dashboard for a fintech startup that reduced churn by 15%')"
             className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 outline-none min-h-[120px] transition-all duration-300"
           />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="url"
+              value={externalLink}
+              onChange={(e) => setExternalLink(e.target.value)}
+              placeholder="External Link (Optional, e.g., GitHub, Live Site)"
+              className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 outline-none transition-all duration-300"
+            />
+            <input
+              type="text"
+              value={authorExplanation}
+              onChange={(e) => setAuthorExplanation(e.target.value)}
+              placeholder="Author's Elaboration or Behind-the-Scenes Note (Optional)"
+              className="w-full bg-black/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] border border-white/10 rounded-xl p-4 text-sm focus:ring-2 focus:ring-cyan-500/50 hover:border-white/20 outline-none transition-all duration-300"
+            />
+          </div>
           <button
             onClick={handleGenerate}
             disabled={isGenerating || !input}
@@ -391,21 +462,40 @@ function PortfolioView({ user, caseStudies, handleError, addToast }: { user: Use
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {caseStudies.map((study) => (
-          <div key={study.id} className="bg-[#141414] p-8 rounded-2xl border border-white/5 hover:border-cyan-500/40 hover:shadow-[0_0_40px_-10px_rgba(6,182,212,0.3)] transition-all duration-500 group">
-            <div className="flex justify-between items-start mb-6">
+        {caseStudies.map((study) => {
+          const views = study.views || 0;
+          const clicks = study.clicks || 0;
+          const ctr = views > 0 ? ((clicks / views) * 100).toFixed(1) : '0.0';
+
+          return (
+          <div key={study.id} className="bg-[#141414] p-8 rounded-2xl border border-white/5 hover:border-cyan-500/40 hover:shadow-[0_0_40px_-10px_rgba(6,182,212,0.3)] transition-all duration-500 group relative">
+            <div className="flex justify-between items-start mb-6 border-b border-white/5 pb-6">
               <div>
-                <h4 className="text-2xl font-serif font-extrabold text-white group-hover:text-cyan-400 transition-colors">{study.title}</h4>
-                <p className="text-sm text-gray-500 font-sans">Client: {study.client}</p>
+                <h4 className="text-2xl font-serif font-extrabold text-white group-hover:text-cyan-400 transition-colors flex items-center gap-3">
+                  {study.title}
+                  {study.externalLink && (
+                    <a href={study.externalLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-cyan-400 transition-colors">
+                      <ExternalLink className="w-5 h-5" />
+                    </a>
+                  )}
+                </h4>
+                <p className="text-sm text-gray-500 font-sans mt-1">Client: {study.client}</p>
               </div>
-              <div className="flex gap-2">
-                {study.tags.map(tag => (
-                  <span key={tag} className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold uppercase tracking-wider text-gray-400">{tag}</span>
-                ))}
+              <div className="flex flex-col items-end gap-3">
+                <div className="flex gap-2">
+                  {study.tags && study.tags.map(tag => (
+                    <span key={tag} className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold uppercase tracking-wider text-gray-400">{tag}</span>
+                  ))}
+                </div>
+                <div className="flex gap-4 text-xs font-mono text-gray-400 bg-black/30 px-3 py-1.5 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-1" title="Views"><Eye className="w-3 h-3"/> {views}</div>
+                  <div className="flex items-center gap-1" title="Clicks on Link"><MousePointerClick className="w-3 h-3"/> {clicks}</div>
+                  <div className="flex items-center gap-1 text-cyan-500" title="Click-Through Rate"><Activity className="w-3 h-3"/> {ctr}% CTR</div>
+                </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6 border-b border-white/5 pb-6">
               <div>
                 <p className="text-xs font-bold text-cyan-400 uppercase mb-2">Challenge</p>
                 <p className="text-sm text-gray-300 leading-relaxed">{study.challenge}</p>
@@ -419,8 +509,57 @@ function PortfolioView({ user, caseStudies, handleError, addToast }: { user: Use
                 <p className="text-sm text-white font-medium leading-relaxed chiseled-text">{study.results}</p>
               </div>
             </div>
+
+            {study.authorExplanation && (
+              <div className="mb-6 bg-cyan-900/10 border-l-4 border-cyan-500 p-4 rounded-r-xl">
+                <p className="text-xs font-bold text-cyan-400 uppercase mb-1 flex items-center gap-2">
+                  <UserCircle className="w-4 h-4" /> 
+                  Author's Elaboration
+                </p>
+                <p className="text-sm text-gray-300 italic">"{study.authorExplanation}"</p>
+              </div>
+            )}
+
+            <div className="mt-6 pt-6 border-t border-white/5">
+              <h5 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-cyan-500" />
+                Discussion ({study.comments?.length || 0})
+              </h5>
+              <div className="space-y-4 mb-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                {study.comments?.map(comment => (
+                  <div key={comment.id} className="bg-black/20 p-3 rounded-xl border border-white/5">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-white">{comment.userName}</span>
+                      <span className="text-[10px] text-gray-500">{new Date(comment.timestamp).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-sm text-gray-300">{comment.text}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ask a question or leave a comment..."
+                  value={commentInputs[study.id] || ''}
+                  onChange={(e) => setCommentInputs({ ...commentInputs, [study.id]: e.target.value })}
+                  className="flex-1 bg-black/40 border border-white/10 rounded-xl py-2 px-4 text-sm outline-none focus:ring-1 focus:ring-cyan-500/50"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handlePostComment(study.id);
+                    }
+                  }}
+                />
+                <button 
+                  onClick={() => handlePostComment(study.id)}
+                  className="px-4 py-2 bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 rounded-xl text-sm font-bold border border-cyan-500/20 transition-all font-sans"
+                >
+                  Post
+                </button>
+              </div>
+            </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
