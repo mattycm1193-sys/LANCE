@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useDropzone } from 'react-dropzone';
+import { Analytics } from '@vercel/analytics/react';
 import { cn } from './lib/utils';
 import { 
   generateContent, 
@@ -137,24 +138,27 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-20 h-20 bg-black rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-cyan-950/20">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 drop-shadow-[0_0_12px_#00FFFF]">
-            <path d="M22 2L12 22L9 15L2 12L22 2Z" fill="#00FFFF" />
-          </svg>
+      <>
+        <div className="h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-8 text-center">
+          <div className="w-20 h-20 bg-black rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-cyan-950/20">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 drop-shadow-[0_0_12px_#00FFFF]">
+              <path d="M22 2L12 22L9 15L2 12L22 2Z" fill="#00FFFF" />
+            </svg>
+          </div>
+          <h1 className="text-5xl font-serif font-extrabold mb-4 tracking-tight text-cyan-100">LANCE: <span className="text-white">success engine</span></h1>
+          <p className="text-gray-400 max-w-md mb-8 leading-relaxed">
+            Scale your freelancing career with AI-powered portfolios, profile curation, and real-time market insights.
+          </p>
+          <button
+            onClick={handleLogin}
+            className="bg-white text-black px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:scale-105 transition-transform shadow-xl"
+          >
+            <LogIn className="w-5 h-5" />
+            Sign in with Google
+          </button>
         </div>
-        <h1 className="text-5xl font-serif font-extrabold mb-4 tracking-tight text-cyan-100">LANCE: <span className="text-white">success engine</span></h1>
-        <p className="text-gray-400 max-w-md mb-8 leading-relaxed">
-          Scale your freelancing career with AI-powered portfolios, profile curation, and real-time market insights.
-        </p>
-        <button
-          onClick={handleLogin}
-          className="bg-white text-black px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:scale-105 transition-transform shadow-xl"
-        >
-          <LogIn className="w-5 h-5" />
-          Sign in with Google
-        </button>
-      </div>
+        <Analytics />
+      </>
     );
   }
 
@@ -248,6 +252,7 @@ export default function App() {
         </div>
         <ToastContainer toasts={toasts} onClose={removeToast} />
       </main>
+      <Analytics />
     </div>
   );
 }
