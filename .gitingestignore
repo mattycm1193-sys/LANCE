@@ -1,0 +1,76 @@
+# <div align="center">
+# <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+# </div>
+
+# ==========================================
+# .gitingestignore_V1.1
+# High-Efficiency Codebase Ingestion Filter
+# ==========================================
+
+# 1. Ignore lockfiles and dependencies
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+cargo.lock
+uv.lock
+node_modules/
+.npm/
+.bun/
+
+# 2. Ignore built/compiled assets & caches
+dist/
+build/
+.next/
+out/
+.parcel-cache/
+.cache/
+.vite/
+.turbo/
+
+# 3. Ignore assets and media
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.gif
+*.webp
+*.ico
+*.mp4
+*.mp3
+*.wav
+*.pdf
+*.zip
+*.tar.gz
+docs/images/
+
+# 4. Ignore Local Dev, Sandbox, and Temporary Directories
+dev/
+.dev/
+tmp/
+temp/
+sandbox/
+*.log
+*.sqlite
+*.db
+
+# 5. Environment & Secrets (CRITICAL for security)
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+*.pem
+*.key
+
+# 6. Local Toolchains & Environments (Mise, uv, Python, IDEs)
+.mise/
+.mise.toml
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.idea/
+.vscode/
+.zed/
